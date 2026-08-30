@@ -135,6 +135,8 @@
   .t-row.locked{opacity:.45;}
   .t-row.active{border-color:var(--teal);}
   .t-name{flex:1;font-size:12.5px;font-weight:600;min-width:0;}
+  .t-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .t-desc{font-size:10.5px;color:var(--text-dim);line-height:1.35;}
   .t-rar{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;flex:none;}
   .t-check{font-size:13px;color:var(--teal);width:14px;text-align:center;flex:none;}
   .t-empty{color:var(--text-dim);font-size:12px;padding:6px 2px;}
@@ -834,42 +836,42 @@ var RARITY = {
 
 var TITLES = [
   /* SELTEN */
-  {id:"beharrlich", r:"selten", m:"Der Beharrliche",     w:"Die Beharrliche",     f:function(st){return st.maxWeekStreak>=12;}},
-  {id:"eisen",      r:"selten", m:"Eisenträger",         w:"Eisenträgerin",       f:function(st){return st.totalVol>=G(250000,150000);}},
-  {id:"vollstaend", r:"selten", m:"Der Vollständige",    w:"Die Vollständige",    f:function(st){return st.completeDays>=10;}},
-  {id:"vertikal",   r:"selten", m:"Vertikal Erhoben",    w:"Vertikal Erhoben",    f:function(st){return st.maxExW(["pu_breit","pu_eng"])>=G(20,10);}},
-  {id:"ausgewogen", r:"selten", m:"Der Ausgewogene",     w:"Die Ausgewogene",     f:function(st){return st.groupsAtLeast(2)>=6;}},
-  {id:"schwerkraft",r:"selten", m:"Schwerkraftverächter",w:"Schwerkraftverächterin",f:function(st){return st.maxExW(["dips"])>=G(40,20);}},
+  {id:"beharrlich", r:"selten", m:"Der Beharrliche",     w:"Die Beharrliche",     d:function(){return "12 Wochen in Folge trainiert";}, f:function(st){return st.maxWeekStreak>=12;}},
+  {id:"eisen",      r:"selten", m:"Eisenträger",         w:"Eisenträgerin",       d:function(){return "Insgesamt "+kg(G(250000,150000))+" bewegt";}, f:function(st){return st.totalVol>=G(250000,150000);}},
+  {id:"vollstaend", r:"selten", m:"Der Vollständige",    w:"Die Vollständige",    d:function(){return "10× ein Trainingsprogramm vollständig geloggt";}, f:function(st){return st.completeDays>=10;}},
+  {id:"vertikal",   r:"selten", m:"Vertikal Erhoben",    w:"Vertikal Erhoben",    d:function(){return "Pull-ups mit "+G(20,10)+" kg Zusatzgewicht";}, f:function(st){return st.maxExW(["pu_breit","pu_eng"])>=G(20,10);}},
+  {id:"ausgewogen", r:"selten", m:"Der Ausgewogene",     w:"Die Ausgewogene",     d:function(){return "Alle 6 Muskelgruppen mindestens in Gold";}, f:function(st){return st.groupsAtLeast(2)>=6;}},
+  {id:"schwerkraft",r:"selten", m:"Schwerkraftverächter",w:"Schwerkraftverächterin",d:function(){return "Dips mit "+G(40,20)+" kg Zusatzgewicht";}, f:function(st){return st.maxExW(["dips"])>=G(40,20);}},
   /* EPISCH */
-  {id:"tonnenschwer",r:"episch",m:"Der Tonnenschwere",   w:"Die Tonnenschwere",   f:function(st){return st.totalVol>=G(1000000,600000);}},
-  {id:"unbeugsam",  r:"episch", m:"Der Unbeugsame",      w:"Die Unbeugsame",      f:function(st){return st.maxWeekStreak>=26;}},
-  {id:"diamant",    r:"episch", m:"Diamantschmied",      w:"Diamantschmiedin",    f:function(st){return st.bestLeague()>=4;}},
-  {id:"hundertfach",r:"episch", m:"Der Hundertfache",    w:"Die Hundertfache",    f:function(st){return st.workoutDays>=100;}},
-  {id:"zweilasten", r:"episch", m:"Träger zweier Lasten",w:"Trägerin zweier Lasten",f:function(st){return st.maxDayVol>=G(25000,15000);}},
-  {id:"rastlos",    r:"episch", m:"Der Rastlose",        w:"Die Rastlose",        f:function(st){return st.streak3x>=8;}},
-  {id:"unsterbl",   r:"episch", m:"Der Unsterbliche",    w:"Die Unsterbliche",    f:function(st){return st.maxDayStreak>=14;}},
+  {id:"tonnenschwer",r:"episch",m:"Der Tonnenschwere",   w:"Die Tonnenschwere",   d:function(){return "Insgesamt "+kg(G(1000000,600000))+" bewegt";}, f:function(st){return st.totalVol>=G(1000000,600000);}},
+  {id:"unbeugsam",  r:"episch", m:"Der Unbeugsame",      w:"Die Unbeugsame",      d:function(){return "26 Wochen in Folge trainiert";}, f:function(st){return st.maxWeekStreak>=26;}},
+  {id:"diamant",    r:"episch", m:"Diamantschmied",      w:"Diamantschmiedin",    d:function(){return "Diamant-Liga in einer Muskelgruppe";}, f:function(st){return st.bestLeague()>=4;}},
+  {id:"hundertfach",r:"episch", m:"Der Hundertfache",    w:"Die Hundertfache",    d:function(){return "An 100 Tagen trainiert";}, f:function(st){return st.workoutDays>=100;}},
+  {id:"zweilasten", r:"episch", m:"Träger zweier Lasten",w:"Trägerin zweier Lasten",d:function(){return "An einem Tag "+kg(G(25000,15000))+" bewegt";}, f:function(st){return st.maxDayVol>=G(25000,15000);}},
+  {id:"rastlos",    r:"episch", m:"Der Rastlose",        w:"Die Rastlose",        d:function(){return "8 Wochen in Folge mindestens 3× pro Woche trainiert";}, f:function(st){return st.streak3x>=8;}},
+  {id:"unsterbl",   r:"episch", m:"Der Unsterbliche",    w:"Die Unsterbliche",    d:function(){return "14 Tage am Stück ohne Pause trainiert";}, f:function(st){return st.maxDayStreak>=14;}},
   /* MYTHISCH */
-  {id:"herrscher",  r:"mythisch",m:"Herrscher der Schwerkraft",w:"Herrscherin der Schwerkraft",f:function(st){return st.bestLeague()>=5;}},
-  {id:"ewig",       r:"mythisch",m:"Der Ewige",          w:"Die Ewige",           f:function(st){return st.maxWeekStreak>=52;}},
-  {id:"titan",      r:"mythisch",m:"Titan",              w:"Titanin",             f:function(st){return st.totalVol>=G(5000000,3000000);}},
-  {id:"schattenf",  r:"mythisch",m:"Schattenfürst",      w:"Schattenfürstin",     f:function(st){return st.groupsAtLeast(3)>=6;}},
-  {id:"unermuedl",  r:"mythisch",m:"Der Unermüdliche",   w:"Die Unermüdliche",    f:function(st){return st.workoutDays>=250;}},
-  {id:"erwacht",    r:"mythisch",m:"Der Erwachte",       w:"Die Erwachte",        f:function(st){return st.level>=25;}},
+  {id:"herrscher",  r:"mythisch",m:"Herrscher der Schwerkraft",w:"Herrscherin der Schwerkraft",d:function(){return "Meister-Liga in einer Muskelgruppe";}, f:function(st){return st.bestLeague()>=5;}},
+  {id:"ewig",       r:"mythisch",m:"Der Ewige",          w:"Die Ewige",           d:function(){return "52 Wochen in Folge trainiert";}, f:function(st){return st.maxWeekStreak>=52;}},
+  {id:"titan",      r:"mythisch",m:"Titan",              w:"Titanin",             d:function(){return "Insgesamt "+kg(G(5000000,3000000))+" bewegt";}, f:function(st){return st.totalVol>=G(5000000,3000000);}},
+  {id:"schattenf",  r:"mythisch",m:"Schattenfürst",      w:"Schattenfürstin",     d:function(){return "Alle 6 Muskelgruppen mindestens in Platin";}, f:function(st){return st.groupsAtLeast(3)>=6;}},
+  {id:"unermuedl",  r:"mythisch",m:"Der Unermüdliche",   w:"Die Unermüdliche",    d:function(){return "An 250 Tagen trainiert";}, f:function(st){return st.workoutDays>=250;}},
+  {id:"erwacht",    r:"mythisch",m:"Der Erwachte",       w:"Die Erwachte",        d:function(){return "Level 25 erreicht";}, f:function(st){return st.level>=25;}},
   /* LEGENDÄR */
-  {id:"koloss",     r:"legendaer",m:"Kolossbrecher",     w:"Kolossbrecherin",     f:function(st){return st.maxSetLoad>=G(300,180);}},
-  {id:"nachtw",     r:"legendaer",m:"Nachtwandler",      w:"Nachtwandlerin",      f:function(st){return st.lateDays>=20;}},
-  {id:"fruehauf",   r:"legendaer",m:"Der Frühaufsteher", w:"Die Frühaufsteherin", f:function(st){return st.earlyDays>=20;}},
-  {id:"zweisonnen", r:"legendaer",m:"Wandler zweier Sonnen",w:"Wandlerin zweier Sonnen",f:function(st){return st.tripleDay;}},
-  {id:"unmoeglich", r:"legendaer",m:"Der Unmögliche",    w:"Die Unmögliche",      f:function(st){return st.absOnlyDayVol>=G(10000,6000);}},
-  {id:"namenlos",   r:"legendaer",m:"Der Namenlose",     w:"Die Namenlose",       f:function(){return false;}},
+  {id:"koloss",     r:"legendaer",m:"Kolossbrecher",     w:"Kolossbrecherin",     d:function(){return "Ein einzelner Satz mit über "+G(300,180)+" kg Gesamtlast";}, f:function(st){return st.maxSetLoad>=G(300,180);}},
+  {id:"nachtw",     r:"legendaer",m:"Nachtwandler",      w:"Nachtwandlerin",      d:function(){return "An 20 Tagen nach 21 Uhr trainiert";}, f:function(st){return st.lateDays>=20;}},
+  {id:"fruehauf",   r:"legendaer",m:"Der Frühaufsteher", w:"Die Frühaufsteherin", d:function(){return "An 20 Tagen vor 8 Uhr trainiert";}, f:function(st){return st.earlyDays>=20;}},
+  {id:"zweisonnen", r:"legendaer",m:"Wandler zweier Sonnen",w:"Wandlerin zweier Sonnen",d:function(){return "Push, Pull und Legs vollständig an einem Tag";}, f:function(st){return st.tripleDay;}},
+  {id:"unmoeglich", r:"legendaer",m:"Der Unmögliche",    w:"Die Unmögliche",      d:function(){return "An einem Tag "+kg(G(10000,6000))+" nur mit Bauchübungen bewegt";}, f:function(st){return st.absOnlyDayVol>=G(10000,6000);}},
+  {id:"namenlos",   r:"legendaer",m:"Der Namenlose",     w:"Die Namenlose",       d:function(){return "Alle anderen Titel gesammelt";}, f:function(){return false;}},
   /* SONDERSTUFE */
-  {id:"monarch",    r:"sonder",  m:"Schattenmonarch",    w:"Schattenmonarchin",   f:function(st){return st.groupsAtLeast(5)>=6;}},
+  {id:"monarch",    r:"sonder",  m:"Schattenmonarch",    w:"Schattenmonarchin",   d:function(){return "Alle 6 Muskelgruppen in der Meister-Liga";}, f:function(st){return st.groupsAtLeast(5)>=6;}},
   /* BERÜCHTIGT (versteckt bis freigeschaltet) */
-  {id:"verschollen",r:"beruecht",m:"Der Verschollene",   w:"Die Verschollene",    f:function(st){return st.maxGapWeeks>=8;}},
-  {id:"staub",      r:"beruecht",m:"Staubfänger",        w:"Staubfängerin",       f:function(st){return st.returnedAfterWeeks>=12;}},
-  {id:"fabulier",   r:"beruecht",m:"Der Fabulierer",     w:"Die Fabuliererin",    f:function(st){return st.maxProgramsPerDay>5;}},
-  {id:"zahlendreh", r:"beruecht",m:"Zahlendreher",       w:"Zahlendreherin",      f:function(st){return st.outlier;}},
-  {id:"halbherzig", r:"beruecht",m:"Der Halbherzige",    w:"Die Halbherzige",     f:function(st){return st.unfinishedDays>=5;}}
+  {id:"verschollen",r:"beruecht",m:"Der Verschollene",   w:"Die Verschollene",    d:function(){return "8 Wochen am Stück nichts geloggt";}, f:function(st){return st.maxGapWeeks>=8;}},
+  {id:"staub",      r:"beruecht",m:"Staubfänger",        w:"Staubfängerin",       d:function(){return "Nach über 12 Wochen Pause zurückgekehrt";}, f:function(st){return st.returnedAfterWeeks>=12;}},
+  {id:"fabulier",   r:"beruecht",m:"Der Fabulierer",     w:"Die Fabuliererin",    d:function(){return "An einem Tag mehr als 5 volle Programme geloggt";}, f:function(st){return st.maxProgramsPerDay>5;}},
+  {id:"zahlendreh", r:"beruecht",m:"Zahlendreher",       w:"Zahlendreherin",      d:function(){return "Ein Satz weit über dem Bestwert – und nie wieder in die Nähe gekommen";}, f:function(st){return st.outlier;}},
+  {id:"halbherzig", r:"beruecht",m:"Der Halbherzige",    w:"Die Halbherzige",     d:function(){return "5× ein Workout abgeschlossen, ohne alle Übungen zu loggen";}, f:function(st){return st.unfinishedDays>=5;}}
 ];
 function titleName(t){ return (S.profile&&S.profile.gender==="w")?t.w:t.m; }
 function titleById(id){ for(var i=0;i<TITLES.length;i++) if(TITLES[i].id===id) return TITLES[i]; return null; }
@@ -948,7 +950,7 @@ function titleListHTML(){
   var html='<div class="t-count"><b>'+got+'</b> von '+total+' Titeln freigeschaltet</div>';
   if(S.title){
     html+='<div class="t-row" data-id="__none"><span class="t-check"></span>'+
-          '<span class="t-name" style="color:var(--text-dim)">Kein Titel anzeigen</span></div>';
+          '<span class="t-main"><span class="t-name" style="color:var(--text-dim)">Kein Titel anzeigen</span></span></div>';
   }
   var list=visible.slice().sort(function(a,b){ return order.indexOf(a.r)-order.indexOf(b.r); });
   var shown=0, lastRar=null;
@@ -963,7 +965,8 @@ function titleListHTML(){
     var ok=!!earned[t.id];
     html+='<div class="t-row'+(ok?"":" locked")+(S.title===t.id?" active":"")+'"'+(ok?' data-id="'+t.id+'"':'')+'>'+
       '<span class="t-check">'+(S.title===t.id?"✓":"")+'</span>'+
-      '<span class="t-name" style="color:'+(ok?RARITY[t.r].color:"var(--text-dim)")+'">'+name+'</span></div>';
+      '<span class="t-main"><span class="t-name" style="color:'+(ok?RARITY[t.r].color:"var(--text-dim)")+'">'+name+'</span>'+
+      (ok&&t.d?'<span class="t-desc">'+t.d()+'</span>':'')+'</span></div>';
   });
   if(shown===0) html+='<div class="t-empty">Kein Titel gefunden.</div>';
   return html;
