@@ -101,6 +101,21 @@
   .league-score{font-family:var(--mono);font-size:10.5px;color:var(--text-dim);margin-bottom:7px;}
   .league-track{height:6px;background:var(--bg-elev2);border-radius:4px;overflow:hidden;}
   .league-fill{height:100%;border-radius:4px;transition:width .4s ease;}
+  .legend{background:var(--bg-elev);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-top:14px;}
+  .legend-title{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--text-dim);margin-bottom:9px;}
+  .legend-row{display:flex;align-items:center;gap:10px;padding:5px 0;font-size:12.5px;}
+  .legend-row .l-ico{width:22px;text-align:center;flex:none;font-size:14px;}
+  .legend-row .l-name{width:70px;flex:none;font-weight:600;}
+  .legend-row .l-range{font-family:var(--mono);font-size:11px;color:var(--text-dim);flex:1;}
+  .legend-row .l-bar{width:6px;height:16px;border-radius:3px;flex:none;}
+  .h2row{display:flex;align-items:center;justify-content:space-between;margin-bottom:0;}
+  .h2row h2{margin-bottom:10px;}
+  .info-btn{background:none;border:none;color:var(--text-dim);font-size:18px;padding:0 4px 10px;line-height:1;}
+  .summary.info{text-align:left;max-height:76vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  .summary.info h4{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--gold);margin:14px 0 5px;}
+  .summary.info h4:first-of-type{margin-top:0;}
+  .summary.info p{font-size:12.5px;color:var(--text);line-height:1.55;margin:0 0 4px;}
+  .summary.info p.dim{color:var(--text-dim);font-size:11.5px;}
   .note{font-size:11.5px;color:var(--text-dim);line-height:1.5;margin-top:4px;}
 
   /* charts */
@@ -193,9 +208,8 @@
   <!-- LIGEN -->
   <div class="tab" id="tab-leagues">
     <section>
-      <h2>LIGEN PRO MUSKELGRUPPE</h2>
+      <div class="h2row"><h2>LIGEN PRO MUSKELGRUPPE</h2><button class="info-btn" id="leagueInfoBtn" aria-label="Info">ⓘ</button></div>
       <div id="leagueList"></div>
-      <p class="note">Die Ligen basieren auf gängigen Kraftstandards (relativ zum Körpergewicht, angepasst an Geschlecht &amp; Alter). <b style="color:var(--gold)">Gold = Durchschnitt.</b> Dadurch sind Ligen zwischen unterschiedlichen Personen direkt vergleichbar – z.&nbsp;B. du (190&nbsp;cm, 90&nbsp;kg, m) gegen jemanden mit 165&nbsp;cm, w: Wer die höhere Liga bzw. den höheren Score hat, ist <i>relativ</i> stärker. Die Werte sind Näherungen, keine Wettkampfstandards.</p>
     </section>
   </div>
 
@@ -267,7 +281,7 @@ var EX = [
   {id:"hammer",    day:"pull", group:"Arme",      name:"Hammercurls (Kabelzug)",           bench:0.45, bw:0},
   {id:"abs_masch", day:"pull", group:"Bauch",     name:"Bauch (Maschine)",                 bench:0.60, bw:0},
 
-  {id:"legpress",  day:"legs", group:"Beine",     name:"Beinpresse",                       bench:2.20, bw:0},
+  {id:"legpress",  day:"legs", group:"Beine",     name:"Beinpresse (45°)",                 bench:2.75, bw:0},
   {id:"legext",    day:"legs", group:"Beine",     name:"Beinstrecker",                     bench:1.10, bw:0},
   {id:"legcurl",   day:"legs", group:"Beine",     name:"Beinbeuger",                       bench:0.95, bw:0},
   {id:"adduktor",  day:"legs", group:"Beine",     name:"Hip Adduktor",                     bench:1.00, bw:0},
@@ -323,7 +337,7 @@ function today(){ return new Date().toISOString().slice(0,10); }
 function isYesterday(prev, cur){
   return Math.round((new Date(cur+"T00:00:00") - new Date(prev+"T00:00:00"))/86400000) === 1;
 }
-function est1RM(w, reps){ return w * (1 + reps/30); }
+function est1RM(w, reps){ return w * (1 + Math.min(reps,12)/30); }
 function fmt(n){ return Math.round(n).toLocaleString("de-DE"); }
 function toast(msg){
   var t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show");
@@ -576,6 +590,17 @@ function renderToday(){
   document.getElementById("todayVol").textContent=fmt(todayVolume());
 }
 
+function legendHTML(){
+  return LEAGUES.map(function(L,i){
+    var lo = i===0 ? 0 : LEAGUES[i-1].max;
+    var range = L.max===99 ? "ab "+lo.toFixed(2) : lo.toFixed(2)+" – "+L.max.toFixed(2);
+    var hint = L.name==="Gold" ? " · Ø = 1,00" : "";
+    return '<div class="legend-row"><span class="l-bar" style="background:'+L.color+'"></span>'+
+      '<span class="l-ico">'+L.icon+'</span><span class="l-name">'+L.name+'</span>'+
+      '<span class="l-range">'+range.replace(/\./g,",")+hint+'</span></div>';
+  }).join("");
+}
+
 function renderLeagues(){
   var wrap=document.getElementById("leagueList"); wrap.innerHTML="";
   if(!S.profile){
@@ -708,6 +733,29 @@ document.getElementById("resetBtn").addEventListener("click", function(){
   S=def(); save(); renderAll(); toast("Zurückgesetzt");
 });
 document.getElementById("finishBtn").addEventListener("click", finishWorkout);
+document.getElementById("leagueInfoBtn").addEventListener("click", function(){
+  var box=document.getElementById("summaryBox");
+  box.className="summary info";
+  box.innerHTML =
+    '<h3>SO ENTSTEHEN DIE LIGEN</h3>'+
+    '<h4 style="margin-top:0;">DIE LIGEN</h4>'+
+    legendHTML()+
+    '<h4>1 · GESCHÄTZTES MAXIMUM</h4>'+
+    '<p>Aus jedem Satz wird ein 1-Wiederholungs-Maximum (1RM) geschätzt: Gewicht × (1 + Wdh. ÷ 30). Ab 12 Wdh. wird gedeckelt, weil die Formel bei hohen Wiederholungszahlen überschätzt. Bei Dips &amp; Pull-ups zählt dein Körpergewicht mit.</p>'+
+    '<h4>2 · VERGLEICH MIT DEM DURCHSCHNITT</h4>'+
+    '<p>Dein bestes 1RM (letzte 90 Tage) wird durch einen Referenzwert geteilt: das, was ein durchschnittlich trainierter Mensch mit deinem Körpergewicht, Geschlecht und Alter bei dieser Übung schafft. Das Ergebnis ist der Score – 1,00 heißt exakt Durchschnitt.</p>'+
+    '<p class="dim">Referenzen angelehnt an Daten von strengthlevel.com (Millionen geloggter Sätze). Frauen-Referenzen liegen je nach Muskelgruppe bei 58–72% der Männer-Werte; Pull-ups (83%) und Dips (80%) haben eigene Faktoren. Ab 35 sinkt die Referenz um 1% pro Jahr.</p>'+
+    '<h4>3 · BESTE ÜBUNG ZÄHLT</h4>'+
+    '<p>Pro Muskelgruppe bestimmt deine stärkste Übung den Score und damit die Liga (Bereiche siehe Liga-Übersicht).</p>'+
+    '<h4>WIE VERLÄSSLICH IST DAS?</h4>'+
+    '<p class="dim">Es sind Näherungswerte. Für Freihantel- und Körpergewichtsübungen sind die Daten solide; bei Maschinen (v.&nbsp;a. Beinpresse) unterscheiden sich Hersteller und Hebelwege stark – dieselbe Anzeige kann an zwei Geräten unterschiedlich schwer sein. Die Ligen taugen gut zum Vergleich mit dir selbst und mit anderen (relativ zu Körpergewicht, Geschlecht, Alter), sind aber keine Wettkampfstandards.</p>'+
+    '<button id="closeOverlay">Alles klar</button>';
+  document.getElementById("overlay").classList.add("show");
+  document.getElementById("closeOverlay").addEventListener("click", function(){
+    document.getElementById("overlay").classList.remove("show");
+    box.className="summary";
+  });
+});
 document.getElementById("exSelect").addEventListener("change", renderExChart);
 
 /* ---------- Tabs / Days ---------- */
