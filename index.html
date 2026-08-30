@@ -14,6 +14,7 @@
     --text:#eceae2; --text-dim:#8c90a0; --border:#2b2f3b;
     --gold:#d7a63e; --teal:#47a99c; --rust:#c2604a; --lav:#8b7fd6; --blue:#4f93c9;
     --radius:16px;
+    --accent:transparent;
     --mono: ui-monospace,"SF Mono","Menlo",monospace;
     --sans: -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;
   }
@@ -167,6 +168,22 @@
   .save-btn{width:100%;background:var(--teal);border:none;border-radius:10px;color:#12141a;font-weight:700;font-size:13.5px;padding:12px;}
   .ghost-btn{width:100%;background:none;border:1px solid var(--border);border-radius:10px;color:var(--text-dim);font-size:12px;padding:10px;margin-top:8px;font-family:var(--mono);}
 
+  /* Titel-Akzent: färbt Rahmen dezent in der Seltenheitsfarbe */
+  body.themed .hud,
+  body.themed .ex-card,
+  body.themed .card,
+  body.themed .chart-box,
+  body.themed .league-card,
+  body.themed .ach-card,
+  body.themed .today-bar,
+  body.themed .seg,
+  body.themed #historyList li,
+  body.themed .summary{
+    border-color:color-mix(in srgb, var(--accent) 45%, var(--border));
+  }
+  body.themed .tabbar{border-top-color:color-mix(in srgb, var(--accent) 45%, var(--border));}
+  body.themed .hud{box-shadow:0 0 14px -6px var(--accent);}
+
   /* tabs */
   .tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;background:rgba(18,20,26,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--border);padding:6px 8px calc(6px + env(safe-area-inset-bottom));z-index:20;}
   .tabbar button{flex:1;background:none;border:none;color:var(--text-dim);font-size:10px;font-family:var(--mono);letter-spacing:.05em;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;}
@@ -186,6 +203,58 @@
   .summary .big-lbl{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.1em;margin:6px 0 16px;}
   .summary .row{display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-top:1px solid var(--border);}
   .summary .row b{font-family:var(--mono);color:var(--gold);}
+  /* Feier-Overlay */
+  .summary.celeb{text-align:center;position:relative;overflow:hidden;--cc:var(--teal);}
+  .celeb-ico{font-size:52px;line-height:1;margin:4px 0 12px;animation:pop .45s cubic-bezier(.2,1.5,.4,1);position:relative;z-index:2;}
+  @keyframes pop{0%{transform:scale(.3);opacity:0;}60%{transform:scale(1.12);}100%{transform:scale(1);opacity:1;}}
+  .celeb-name{font-size:20px;font-weight:700;line-height:1.25;margin-bottom:5px;position:relative;z-index:2;}
+  .celeb-x{font-family:var(--mono);font-size:15px;color:var(--gold);}
+  .celeb-desc{font-size:12.5px;color:var(--text-dim);line-height:1.45;position:relative;z-index:2;}
+  .summary.celeb h3{position:relative;z-index:2;}
+  .summary.celeb button{position:relative;z-index:2;}
+  .summary.celeb button.celeb-use{margin-top:14px;background:var(--bg-elev2);color:var(--text);border:1px solid var(--border);}
+  .summary.celeb button.celeb-use:disabled{opacity:.6;}
+
+  /* Stufe 1+ : farbiger Rahmen und weicher Schein */
+  .celeb.t1,.celeb.t2,.celeb.t3,.celeb.t4,.celeb.t5{
+    border-color:var(--cc);
+    box-shadow:0 0 22px -8px var(--cc);
+  }
+  /* Stufe 2+ : farbiger Verlauf im Hintergrund */
+  .celeb.t2::before,.celeb.t3::before,.celeb.t4::before,.celeb.t5::before{
+    content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+    background:radial-gradient(120% 70% at 50% 0%, var(--cc) 0%, transparent 62%);
+    opacity:.16;
+  }
+  .celeb.t3::before{opacity:.24;}
+  .celeb.t4::before{opacity:.3;}
+  .celeb.t5::before{opacity:.34;}
+  /* Stufe 3+ : Lichtstreif zieht einmal über die Karte */
+  .celeb.t3::after,.celeb.t4::after,.celeb.t5::after{
+    content:"";position:absolute;top:0;bottom:0;width:55%;z-index:1;pointer-events:none;
+    background:linear-gradient(100deg,transparent,rgba(255,255,255,.13),transparent);
+    animation:sweep 2.4s ease-in-out .35s 2;
+    left:-60%;
+  }
+  @keyframes sweep{to{left:115%;}}
+  /* Stufe 4+ : rotierender Lichtkranz hinter dem Symbol */
+  .celeb.t4 .celeb-ico::before,.celeb.t5 .celeb-ico::before{
+    content:"";position:absolute;left:50%;top:50%;width:104px;height:104px;margin:-52px 0 0 -52px;
+    border-radius:50%;z-index:-1;
+    background:conic-gradient(from 0deg,transparent,var(--cc),transparent 62%);
+    opacity:.5;animation:spin 4.5s linear infinite;
+    -webkit-mask:radial-gradient(circle,transparent 33px,#000 34px);
+    mask:radial-gradient(circle,transparent 33px,#000 34px);
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  /* Stufe 5 : stärkerer Schein, pulsierender Rahmen */
+  .celeb.t5{box-shadow:0 0 34px -6px var(--cc);animation:pulse 2.6s ease-in-out infinite;}
+  @keyframes pulse{50%{box-shadow:0 0 46px -2px var(--cc);}}
+  .celeb.t5 .celeb-ico{font-size:60px;}
+  @media (prefers-reduced-motion:reduce){
+    .celeb-ico,.celeb.t3::after,.celeb.t4::after,.celeb.t5::after,
+    .celeb.t4 .celeb-ico::before,.celeb.t5 .celeb-ico::before,.celeb.t5{animation:none;}
+  }
   .summary button:not(.popup-x){margin-top:16px;width:100%;background:var(--gold);border:none;border-radius:10px;color:#12141a;font-weight:700;padding:12px;font-size:13.5px;}
 </style>
 </head>
@@ -353,7 +422,7 @@ var LEAGUES = [
 ];
 
 /* ---------- State ---------- */
-function def(){ return {profile:null, totalXP:0, streak:0, lastLogDate:null, finishedDates:[], entries:[], lastInputs:{}, leaguePeak:{}, achSeen:{}, title:null}; }
+function def(){ return {profile:null, totalXP:0, streak:0, lastLogDate:null, finishedDates:[], entries:[], lastInputs:{}, leaguePeak:{}, achSeen:{}, titlesSeen:{}, title:null}; }
 function load(){
   try{ var r=localStorage.getItem(KEY); if(!r) return def();
     var p=JSON.parse(r); var st=Object.assign(def(), p);
@@ -494,7 +563,10 @@ function finishWorkout(){
     '<button id="closeOverlay">Stark! 💪</button>';
   document.getElementById("overlay").classList.add("show");
   document.getElementById("closeOverlay").addEventListener("click", function(){
-    document.getElementById("overlay").classList.remove("show"); renderAll();
+    box.className="summary";
+    document.getElementById("overlay").classList.remove("show");
+    checkAchievements(true);   /* Bonus-XP kann Erfolge auslösen */
+    renderAll();
   });
 }
 function todayVolume(){
@@ -684,6 +756,16 @@ function computeStats(){
     var plans=setsToday/24; /* ~24 Sätze = ein normales Programm */
     if(plans>st.maxProgramsPerDay) st.maxProgramsPerDay=plans;
   });
+  /* gleiche Übung mehrfach am selben Tag geloggt */
+  st.maxSameExPerDay=0;
+  (function(){
+    var cnt={};
+    S.entries.forEach(function(e){
+      var k=e.date+"|"+e.ex;
+      cnt[k]=(cnt[k]||0)+1;
+      if(cnt[k]>st.maxSameExPerDay) st.maxSameExPerDay=cnt[k];
+    });
+  })();
   /* Ausreißer: Satz > 2× bisheriger Bestwert, ab 5. Eintrag der Übung, nie wieder erreicht */
   st.outlier=false;
   (function(){
@@ -737,13 +819,19 @@ function computeStats(){
 }
 
 function updateLeaguePeak(){
-  var sc=groupScores(); if(!sc) return;
+  var sc=groupScores(); if(!sc) return [];
   S.leaguePeak=S.leaguePeak||{};
+  var proms=[];
   GROUPS.forEach(function(g){
     if(sc[g]===null) return;
     var idx=leagueFor(sc[g]).idx;
-    if(S.leaguePeak[g]===undefined || idx>S.leaguePeak[g]) S.leaguePeak[g]=idx;
+    var prev=S.leaguePeak[g];
+    if(prev===undefined || idx>prev){
+      if(prev!==undefined) proms.push({group:g, from:prev, to:idx});
+      S.leaguePeak[g]=idx;
+    }
   });
+  return proms;
 }
 
 /* ---------- Erfolge ---------- */
@@ -826,12 +914,12 @@ function achKey(a){ return a.sec+"|"+a.name; }
 
 /* ---------- Titel ---------- */
 var RARITY = {
-  selten:   {label:"Selten",      color:"#5fbf6a"},
-  episch:   {label:"Episch",      color:"#4f93c9"},
-  mythisch: {label:"Mythisch",    color:"#e08a3c"},
-  legendaer:{label:"Legendär",    color:"#d94f45"},
-  sonder:   {label:"Sonderstufe", color:"#a86fe0"},
-  beruecht: {label:"Berüchtigt",  color:"#9aa832"}
+  selten:   {label:"Selten",      color:"#5fbf6a", ico:"🎖️"},
+  episch:   {label:"Episch",      color:"#4f93c9", ico:"🏵️"},
+  mythisch: {label:"Mythisch",    color:"#e08a3c", ico:"⚜️"},
+  legendaer:{label:"Legendär",    color:"#d94f45", ico:"👑"},
+  sonder:   {label:"Sonderstufe", color:"#a86fe0", ico:"🌑"},
+  beruecht: {label:"Berüchtigt",  color:"#9aa832", ico:"☠️"}
 };
 
 var TITLES = [
@@ -869,7 +957,7 @@ var TITLES = [
   /* BERÜCHTIGT (versteckt bis freigeschaltet) */
   {id:"verschollen",r:"beruecht",m:"Der Verschollene",   w:"Die Verschollene",    d:function(){return "8 Wochen am Stück nichts geloggt";}, f:function(st){return st.maxGapWeeks>=8;}},
   {id:"staub",      r:"beruecht",m:"Staubfänger",        w:"Staubfängerin",       d:function(){return "Nach über 12 Wochen Pause zurückgekehrt";}, f:function(st){return st.returnedAfterWeeks>=12;}},
-  {id:"fabulier",   r:"beruecht",m:"Der Fabulierer",     w:"Die Fabuliererin",    d:function(){return "An einem Tag mehr als 5 volle Programme geloggt";}, f:function(st){return st.maxProgramsPerDay>5;}},
+  {id:"fabulier",   r:"beruecht",m:"Der Fabulierer",     w:"Die Fabuliererin",    d:function(){return "Level künstlich aufgebläht – dieselbe Übung 3× an einem Tag oder mehr als 3 volle Programme";}, f:function(st){return st.maxProgramsPerDay>3 || st.maxSameExPerDay>=3;}},
   {id:"zahlendreh", r:"beruecht",m:"Zahlendreher",       w:"Zahlendreherin",      d:function(){return "Ein Satz weit über dem Bestwert – und nie wieder in die Nähe gekommen";}, f:function(st){return st.outlier;}},
   {id:"halbherzig", r:"beruecht",m:"Der Halbherzige",    w:"Die Halbherzige",     d:function(){return "5× ein Workout abgeschlossen, ohne alle Übungen zu loggen";}, f:function(st){return st.unfinishedDays>=5;}}
 ];
@@ -889,36 +977,98 @@ function earnedTitles(st){
 }
 
 function checkAchievements(notify){
-  updateLeaguePeak();
+  var proms=updateLeaguePeak();
   var st=computeStats();
   var A=buildAchievements(st);
   S.achSeen=S.achSeen||{};
-  var newly=[];
+  var events=[];
+  var ACH_TIER = {
+    "TAGESVOLUMEN":1, "KONSTANZ":1, "SPEZIAL":1,
+    "LEVEL":2, "ÜBUNGS-MEILENSTEINE":2,
+    "WOCHEN-STREAK":3, "GESAMTVOLUMEN":3, "LIGEN":3
+  };
+  var ACH_COLOR = {1:"#47a99c", 2:"#4f93c9", 3:"#d7a63e"};
   A.forEach(function(a){
     var n = a.type==="counter" ? a.n : (a.val>=a.target?1:0);
     var seen = S.achSeen[achKey(a)]||0;
     if(n>seen){
-      if(seen===0 || a.type==="counter") newly.push(a.name+(a.type==="counter"&&n>1?" ×"+n:""));
+      if(seen===0 || a.type==="counter"){
+        var tr = ACH_TIER[a.sec]||1;
+        events.push({kind:"ach", ico:a.ico, name:a.name, desc:a.desc,
+                     tier:tr, color:ACH_COLOR[tr],
+                     extra:(a.type==="counter"&&n>1)?("×"+n):null});
+      }
       S.achSeen[achKey(a)]=n;
     }
   });
-  save();
-  /* neue Titel melden */
+  /* Liga-Aufstiege */
+  proms.forEach(function(p){
+    var L=LEAGUES[p.to];
+    /* Bronze/Silber dezent, Meister prachtvoll */
+    var tier=Math.max(1,Math.min(5,p.to));
+    events.push({kind:"league", ico:L.icon, name:L.name+"-Liga", desc:p.group,
+                 color:L.color, from:LEAGUES[p.from].name, tier:tier});
+  });
+  /* neue Titel */
   var e2=earnedTitles(st);
   S.titlesSeen=S.titlesSeen||{};
-  var newT=[];
   Object.keys(e2).forEach(function(id){
-    if(!S.titlesSeen[id]){ S.titlesSeen[id]=1; var t=titleById(id); if(t) newT.push(titleName(t)); }
+    if(!S.titlesSeen[id]){
+      S.titlesSeen[id]=1;
+      var t=titleById(id);
+      if(t) events.push({kind:"title", id:id, name:titleName(t), desc:t.d?t.d():"",
+                         ico:RARITY[t.r].ico, color:RARITY[t.r].color,
+                         rar:RARITY[t.r].label, shimmer:t.r==="sonder",
+                         tier:TIER_BY_RARITY[t.r]});
+    }
   });
   save();
-  if(notify && newT.length){
-    setTimeout(function(){ toast("👑 Titel: "+newT[0]); }, newly.length?3600:1900);
+  if(notify && events.length) queueCelebrations(events);
+}
+
+/* ---------- Feier-Overlay ---------- */
+var TIER_BY_RARITY = {selten:1, episch:2, mythisch:3, legendaer:4, sonder:5, beruecht:1};
+var celebQueue=[];
+function queueCelebrations(list){
+  celebQueue=celebQueue.concat(list);
+  if(!document.getElementById("overlay").classList.contains("show")) showNextCelebration();
+}
+function showNextCelebration(){
+  var ov=document.getElementById("overlay");
+  if(celebQueue.length===0){ ov.classList.remove("show"); renderAll(); return; }
+  var ev=celebQueue.shift();
+  var box=document.getElementById("summaryBox");
+  var head, sub, colour, action, tier;
+  if(ev.kind==="ach"){
+    head="ERFOLG FREIGESCHALTET"; colour=ev.color||"#47a99c"; tier=ev.tier||1;
+  } else if(ev.kind==="league"){
+    head="LIGA-AUFSTIEG"; colour=ev.color; tier=ev.tier;
+  } else {
+    head=ev.rar.toUpperCase()+"ER TITEL"; colour=ev.color; tier=ev.tier;
   }
-  if(notify && newly.length){
-    setTimeout(function(){
-      toast("🏅 "+(newly.length===1 ? newly[0] : newly.length+" neue Erfolge!"));
-    }, 1900);
-  }
+  sub = ev.kind==="league" ? (ev.desc+" · von "+ev.from) : ev.desc;
+  action = celebQueue.length ? "Weiter ("+(celebQueue.length+1)+")" : "Stark! 💪";
+  box.className="summary celeb t"+tier;
+  box.style.setProperty("--cc", colour);
+  box.innerHTML=
+    '<h3>'+head+'</h3>'+
+    '<div class="celeb-ico">'+ev.ico+'</div>'+
+    '<div class="celeb-name'+(ev.shimmer?" shimmer":"")+'" style="'+(ev.shimmer?"":"color:"+colour)+'">'+
+      ev.name+(ev.extra?' <span class="celeb-x">'+ev.extra+'</span>':'')+'</div>'+
+    (sub?'<div class="celeb-desc">'+sub+'</div>':'')+
+    (ev.kind==="title"?'<button class="celeb-use" id="useTitle">Titel anlegen</button>':'')+
+    '<button id="celebNext">'+action+'</button>';
+  ov.classList.add("show");
+  var use=document.getElementById("useTitle");
+  if(use) use.addEventListener("click", function(){
+    S.title=ev.id; save(); renderHudTitle();
+    use.textContent="Angelegt ✓"; use.disabled=true;
+  });
+  document.getElementById("celebNext").addEventListener("click", function(){
+    box.className="summary";
+    box.style.removeProperty("--cc");
+    showNextCelebration();
+  });
 }
 
 function renderHudTitle(){
@@ -927,11 +1077,15 @@ function renderHudTitle(){
   if(!t){
     el.textContent="Titel wählen";
     el.className=""; el.style.color="";
+    document.body.classList.remove("themed");
+    document.documentElement.style.setProperty("--accent","transparent");
     return;
   }
   el.textContent=titleName(t);
   el.className = t.r==="sonder" ? "shimmer" : "";
   el.style.color = t.r==="sonder" ? "" : RARITY[t.r].color;
+  document.documentElement.style.setProperty("--accent", RARITY[t.r].color);
+  document.body.classList.add("themed");
 }
 
 var titleQuery="";
@@ -1294,8 +1448,30 @@ document.getElementById("importFile").addEventListener("change", function(ev){
   r.readAsText(f);
 });
 document.getElementById("resetBtn").addEventListener("click", function(){
-  if(!confirm("Wirklich ALLE Daten löschen?")) return;
-  S=def(); save(); renderAll(); toast("Zurückgesetzt");
+  var box=document.getElementById("summaryBox");
+  box.className="summary";
+  box.innerHTML=
+    '<button class="popup-x" id="popupX" aria-label="schließen">×</button>'+
+    '<h3>ALLE DATEN LÖSCHEN</h3>'+
+    '<p style="font-size:13px;line-height:1.5;margin:0 0 4px;">Dein Profil, alle Einträge, XP, Erfolge und Titel werden entfernt. Das lässt sich nicht rückgängig machen.</p>'+
+    '<p style="font-size:11.5px;color:var(--text-dim);line-height:1.45;margin:8px 0 0;">Tipp: Exportiere vorher ein Backup, falls du die Daten später zurückholen willst.</p>'+
+    '<button id="resetConfirm" style="background:var(--rust);color:#fff;">Ja, alles löschen</button>'+
+    '<button id="resetCancel" style="background:var(--bg-elev2);color:var(--text);border:1px solid var(--border);margin-top:8px;">Abbrechen</button>';
+  document.getElementById("overlay").classList.add("show");
+  function close(){ document.getElementById("overlay").classList.remove("show"); }
+  document.getElementById("resetCancel").addEventListener("click", close);
+  document.getElementById("popupX").addEventListener("click", close);
+  document.getElementById("resetConfirm").addEventListener("click", function(){
+    S=def();
+    UI={open:{}, sets:{}, assist:{}};
+    celebQueue=[];
+    titleQuery="";
+    save();
+    close();
+    renderHudTitle();
+    switchTab("profile");
+    toast("Alle Daten zurückgesetzt");
+  });
 });
 document.getElementById("titleBtn").addEventListener("click", openTitlePopup);
 document.getElementById("finishBtn").addEventListener("click", finishWorkout);
