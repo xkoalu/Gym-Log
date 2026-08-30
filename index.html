@@ -111,7 +111,9 @@
   .h2row{display:flex;align-items:center;justify-content:space-between;margin-bottom:0;}
   .h2row h2{margin-bottom:10px;}
   .info-btn{background:none;border:none;color:var(--text-dim);font-size:18px;padding:0 4px 10px;line-height:1;}
-  .summary.info{text-align:left;max-height:76vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  .summary.info{text-align:left;}
+  .info-scroll{max-height:52vh;max-height:52dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:2px;}
+  .popup-x{position:absolute;top:10px;right:10px;margin:0;width:26px;height:26px;background:var(--bg-elev2);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:14px;font-weight:400;line-height:24px;text-align:center;padding:0;z-index:2;}
   .summary.info h4{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--gold);margin:14px 0 5px;}
   .summary.info h4:first-of-type{margin-top:0;}
   .summary.info p{font-size:12.5px;color:var(--text);line-height:1.55;margin:0 0 4px;}
@@ -136,20 +138,20 @@
   .tabbar button.active{color:var(--gold);}
   .tabbar .ico{font-size:18px;line-height:1;}
   .tab{display:none;}
-  .tab.active{display:flex;flex-direction:column;gap:18px;}
+  .tab.active{display:flex;flex-direction:column;gap:18px;min-height:calc(100vh - 230px);min-height:calc(100dvh - 230px);}
 
   /* toast + overlay */
   #toast{position:fixed;left:50%;bottom:88px;transform:translate(-50%,20px);background:var(--bg-elev2);border:1px solid var(--border);color:var(--text);padding:10px 18px;border-radius:999px;font-family:var(--mono);font-size:12px;opacity:0;pointer-events:none;transition:.25s;white-space:nowrap;z-index:30;}
   #toast.show{opacity:1;transform:translate(-50%,0);}
   #overlay{position:fixed;inset:0;background:rgba(10,11,15,.8);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:40;padding:24px;}
   #overlay.show{display:flex;}
-  .summary{background:var(--bg-elev);border:1px solid var(--border);border-radius:18px;padding:22px;max-width:340px;width:100%;text-align:center;}
+  .summary{background:var(--bg-elev);border:1px solid var(--border);border-radius:18px;padding:22px;max-width:340px;width:100%;text-align:center;position:relative;}
   .summary h3{font-family:var(--mono);letter-spacing:.15em;font-size:11px;color:var(--text-dim);margin:0 0 14px;}
   .summary .big{font-family:var(--mono);font-size:34px;font-weight:700;color:var(--teal);line-height:1;}
   .summary .big-lbl{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.1em;margin:6px 0 16px;}
   .summary .row{display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-top:1px solid var(--border);}
   .summary .row b{font-family:var(--mono);color:var(--gold);}
-  .summary button{margin-top:16px;width:100%;background:var(--gold);border:none;border-radius:10px;color:#12141a;font-weight:700;padding:12px;font-size:13.5px;}
+  .summary button:not(.popup-x){margin-top:16px;width:100%;background:var(--gold);border:none;border-radius:10px;color:#12141a;font-weight:700;padding:12px;font-size:13.5px;}
 </style>
 </head>
 <body>
@@ -737,7 +739,9 @@ document.getElementById("leagueInfoBtn").addEventListener("click", function(){
   var box=document.getElementById("summaryBox");
   box.className="summary info";
   box.innerHTML =
+    '<button class="popup-x" id="popupX" aria-label="schließen">×</button>'+
     '<h3>SO ENTSTEHEN DIE LIGEN</h3>'+
+    '<div class="info-scroll">'+
     '<h4 style="margin-top:0;">DIE LIGEN</h4>'+
     legendHTML()+
     '<h4>1 · GESCHÄTZTES MAXIMUM</h4>'+
@@ -746,15 +750,18 @@ document.getElementById("leagueInfoBtn").addEventListener("click", function(){
     '<p>Dein bestes 1RM (letzte 90 Tage) wird durch einen Referenzwert geteilt: das, was ein durchschnittlich trainierter Mensch mit deinem Körpergewicht, Geschlecht und Alter bei dieser Übung schafft. Das Ergebnis ist der Score – 1,00 heißt exakt Durchschnitt.</p>'+
     '<p class="dim">Referenzen angelehnt an Daten von strengthlevel.com (Millionen geloggter Sätze). Frauen-Referenzen liegen je nach Muskelgruppe bei 58–72% der Männer-Werte; Pull-ups (83%) und Dips (80%) haben eigene Faktoren. Ab 35 sinkt die Referenz um 1% pro Jahr.</p>'+
     '<h4>3 · BESTE ÜBUNG ZÄHLT</h4>'+
-    '<p>Pro Muskelgruppe bestimmt deine stärkste Übung den Score und damit die Liga (Bereiche siehe Liga-Übersicht).</p>'+
+    '<p>Pro Muskelgruppe bestimmt deine stärkste Übung den Score und damit die Liga.</p>'+
     '<h4>WIE VERLÄSSLICH IST DAS?</h4>'+
     '<p class="dim">Es sind Näherungswerte. Für Freihantel- und Körpergewichtsübungen sind die Daten solide; bei Maschinen (v.&nbsp;a. Beinpresse) unterscheiden sich Hersteller und Hebelwege stark – dieselbe Anzeige kann an zwei Geräten unterschiedlich schwer sein. Die Ligen taugen gut zum Vergleich mit dir selbst und mit anderen (relativ zu Körpergewicht, Geschlecht, Alter), sind aber keine Wettkampfstandards.</p>'+
+    '</div>'+
     '<button id="closeOverlay">Alles klar</button>';
   document.getElementById("overlay").classList.add("show");
-  document.getElementById("closeOverlay").addEventListener("click", function(){
+  function closeInfo(){
     document.getElementById("overlay").classList.remove("show");
     box.className="summary";
-  });
+  }
+  document.getElementById("closeOverlay").addEventListener("click", closeInfo);
+  document.getElementById("popupX").addEventListener("click", closeInfo);
 });
 document.getElementById("exSelect").addEventListener("change", renderExChart);
 
