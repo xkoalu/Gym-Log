@@ -34,7 +34,7 @@
   .ring-level .num{font-size:20px;font-weight:700;line-height:1;}
   .ring-level .lbl{font-size:8px;letter-spacing:.12em;color:var(--text-dim);margin-top:2px;}
   .hud-info{flex:1;min-width:0;}
-  .hud-title{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--text-dim);margin-bottom:5px;}
+  .hud-title{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--text-dim);margin-bottom:3px;}
   .xp-line{font-family:var(--mono);font-size:12.5px;margin-bottom:7px;}
   .xp-line b{color:var(--gold);}
   .xp-bar-track{height:6px;border-radius:4px;background:var(--bg-elev2);overflow:hidden;}
@@ -123,6 +123,24 @@
   .ach-badge.count{color:var(--gold);font-weight:700;}
   .ach-badge.done{color:var(--teal);font-size:15px;}
   .ach-badge.pct{color:var(--text-dim);font-size:10px;}
+  /* titles */
+  .hud-titlebtn{display:flex;align-items:center;gap:5px;background:none;border:none;padding:0 0 6px;margin:0;font-family:var(--sans);font-size:12.5px;font-weight:700;color:var(--text-dim);text-align:left;}
+  .hud-titlebtn .tb-chev{font-size:13px;color:var(--text-dim);font-weight:400;}
+  .hud-name.shimmer,#hudTitle.shimmer{background:linear-gradient(90deg,#a86fe0,#e0b0ff,#a86fe0);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shim 3s linear infinite;}
+  @keyframes shim{to{background-position:-200% 0;}}
+  @media (prefers-reduced-motion:reduce){.shimmer{animation:none;}}
+  .t-search{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:13px;padding:9px 11px;margin-bottom:10px;}
+  .t-search:focus{outline:none;border-color:var(--teal);}
+  .t-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid var(--border);border-radius:10px;margin-bottom:6px;background:var(--bg);}
+  .t-row.locked{opacity:.45;}
+  .t-row.active{border-color:var(--teal);}
+  .t-name{flex:1;font-size:12.5px;font-weight:600;min-width:0;}
+  .t-rar{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;flex:none;}
+  .t-check{font-size:13px;color:var(--teal);width:14px;text-align:center;flex:none;}
+  .t-empty{color:var(--text-dim);font-size:12px;padding:6px 2px;}
+  .t-count{font-size:12px;color:var(--text-dim);margin-bottom:10px;}
+  .t-count b{color:var(--gold);font-family:var(--mono);}
+  .t-rarhead{font-family:var(--mono);font-size:9px;letter-spacing:.16em;margin:12px 0 6px 2px;}
   .h2row{display:flex;align-items:center;justify-content:space-between;margin-bottom:0;}
   .h2row h2{margin-bottom:10px;}
   .info-btn{background:none;border:none;color:var(--text-dim);font-size:18px;padding:0 4px 10px;line-height:1;}
@@ -181,7 +199,8 @@
       <div class="ring-level"><div class="num" id="levelNum">1</div><div class="lbl">LVL</div></div>
     </div>
     <div class="hud-info">
-      <div class="hud-title">GYM.LOG · CHARAKTERBOGEN</div>
+      <div class="hud-title">GYM.LOG</div>
+      <button class="hud-titlebtn" id="titleBtn"><span id="hudTitle">Titel wählen</span><span class="tb-chev">›</span></button>
       <div class="xp-line"><b id="xpInto">0</b> / <span id="xpNeed">100</span> XP</div>
       <div class="xp-bar-track"><div class="xp-bar-fill" id="xpBar" style="width:0%"></div></div>
       <div class="streak">🔥 <span id="streakVal">0</span>&nbsp;Wochen-Streak</div>
@@ -332,7 +351,7 @@ var LEAGUES = [
 ];
 
 /* ---------- State ---------- */
-function def(){ return {profile:null, totalXP:0, streak:0, lastLogDate:null, finishedDates:[], entries:[], lastInputs:{}, leaguePeak:{}, achSeen:{}}; }
+function def(){ return {profile:null, totalXP:0, streak:0, lastLogDate:null, finishedDates:[], entries:[], lastInputs:{}, leaguePeak:{}, achSeen:{}, title:null}; }
 function load(){
   try{ var r=localStorage.getItem(KEY); if(!r) return def();
     var p=JSON.parse(r); var st=Object.assign(def(), p);
@@ -590,6 +609,120 @@ function computeStats(){
     });
   });
   st.level=levelFromXP(S.totalXP).level;
+  /* --- Zusatzwerte für Titel --- */
+  st.maxDayVol=0;
+  Object.keys(st.dayVol).forEach(function(d){ if(st.dayVol[d]>st.maxDayVol) st.maxDayVol=st.dayVol[d]; });
+  st.maxSetLoad=0;
+  var earlyD={}, lateD={}, absVol={}, dayFull={};
+  S.entries.forEach(function(e){
+    var ex=exById(e.ex); if(!ex) return;
+    (e.setList||[]).forEach(function(s){ if(s.eff>st.maxSetLoad) st.maxSetLoad=s.eff; });
+    var h=new Date(e.ts).getHours();
+    if(h<8) earlyD[e.date]=1;
+    if(h>=21) lateD[e.date]=1;
+    if(ex.group==="Bauch") absVol[e.date]=(absVol[e.date]||0)+e.vol;
+  });
+  st.earlyDays=Object.keys(earlyD).length;
+  st.lateDays=Object.keys(lateD).length;
+  /* Bauch-only-Tage: Tagesvolumen stammt ausschließlich aus Bauchübungen */
+  st.absOnlyDayVol=0;
+  Object.keys(absVol).forEach(function(d){
+    if(Math.abs(absVol[d]-st.dayVol[d])<0.01 && absVol[d]>st.absOnlyDayVol) st.absOnlyDayVol=absVol[d];
+  });
+  /* Tag mit allen drei Plänen komplett */
+  st.tripleDay=false;
+  Object.keys(st.dayExs).forEach(function(d){
+    var all3=true;
+    ["push","pull","legs"].forEach(function(day){
+      EX.forEach(function(ex){ if(ex.day===day && !st.dayExs[d][ex.id]) all3=false; });
+    });
+    if(all3) st.tripleDay=true;
+  });
+  /* Serie an Wochen mit mindestens 3 Trainingstagen */
+  var wkDayCount={};
+  Object.keys(st.dates).forEach(function(d){
+    var wk=weekStart(d); wkDayCount[wk]=(wkDayCount[wk]||0)+1;
+  });
+  var wks=Object.keys(wkDayCount).sort(), run3=0, max3=0;
+  for(var j=0;j<wks.length;j++){
+    var ok=wkDayCount[wks[j]]>=3;
+    var cont = j>0 && addDays(wks[j-1],7)===wks[j];
+    run3 = (ok && cont) ? run3+1 : (ok?1:0);
+    if(run3>max3) max3=run3;
+  }
+  st.streak3x=max3;
+  st.bestLeague=function(){
+    var b=-1; GROUPS.forEach(function(g){ if(st.peak(g)>b) b=st.peak(g); }); return b;
+  };
+  st.groupsAtLeast=function(idx){
+    var n=0; GROUPS.forEach(function(g){ if(st.peak(g)>=idx) n++; }); return n;
+  };
+  /* --- Tages-Serie, Pausen, Auffälligkeiten --- */
+  var ds=Object.keys(st.dates).sort();
+  var runD=0, maxD=0, maxGapDays=0, retGap=0;
+  for(var k=0;k<ds.length;k++){
+    runD = (k>0 && addDays(ds[k-1],1)===ds[k]) ? runD+1 : 1;
+    if(runD>maxD) maxD=runD;
+    if(k>0){
+      var gap=Math.round((new Date(ds[k]+"T12:00:00")-new Date(ds[k-1]+"T12:00:00"))/86400000)-1;
+      if(gap>maxGapDays) maxGapDays=gap;
+      if(gap>retGap) retGap=gap; /* Lücke, nach der wieder trainiert wurde */
+    }
+  }
+  st.maxDayStreak=maxD;
+  /* laufende Pause bis heute mitzählen */
+  var curGap = ds.length ? Math.round((new Date(today()+"T12:00:00")-new Date(ds[ds.length-1]+"T12:00:00"))/86400000) : 0;
+  st.maxGapWeeks=Math.floor(Math.max(maxGapDays,curGap)/7);
+  st.returnedAfterWeeks=Math.floor(retGap/7);
+  /* Programme pro Tag: wie oft wurde ein kompletter Plan an einem Tag geloggt (Übungszahl/Plangröße) */
+  st.maxProgramsPerDay=0;
+  Object.keys(st.dayVol).forEach(function(d){
+    var setsToday=0;
+    S.entries.forEach(function(e){ if(e.date===d) setsToday+=(e.setList?e.setList.length:0); });
+    var plans=setsToday/24; /* ~24 Sätze = ein normales Programm */
+    if(plans>st.maxProgramsPerDay) st.maxProgramsPerDay=plans;
+  });
+  /* Ausreißer: Satz > 2× bisheriger Bestwert, ab 5. Eintrag der Übung, nie wieder erreicht */
+  st.outlier=false;
+  (function(){
+    var byEx={};
+    S.entries.slice().sort(function(a,b){return a.ts-b.ts;}).forEach(function(e){
+      var arr=byEx[e.ex]=byEx[e.ex]||[];
+      arr.push(e);
+    });
+    Object.keys(byEx).forEach(function(id){
+      var list=byEx[id], best=0, flagged=null, flagVal=0;
+      list.forEach(function(e,i){
+        var mx=0; (e.setList||[]).forEach(function(s){ if(s.eff>mx) mx=s.eff; });
+        if(i>=4 && best>0 && mx>best*2){ flagged=i; flagVal=mx; }
+        if(mx>best && !(i>=4 && best>0 && mx>best*2)) best=mx;
+      });
+      if(flagged!==null){
+        var laterClose=false;
+        for(var i=flagged+1;i<list.length;i++){
+          var mx2=0; (list[i].setList||[]).forEach(function(s){ if(s.eff>mx2) mx2=s.eff; });
+          if(mx2>=flagVal*0.8) laterClose=true;
+        }
+        if(!laterClose && list.length>flagged+2) st.outlier=true;
+      }
+    });
+  })();
+  /* Abgeschlossene Workouts, bei denen der Trainingsplan unvollständig blieb */
+  st.unfinishedDays=0;
+  (S.finishedDates||[]).forEach(function(d){
+    var logged=st.dayExs[d]; if(!logged) return;
+    /* Plan mit den meisten geloggten Übungen an diesem Tag bestimmen */
+    var counts={push:0,pull:0,legs:0}, sizes={push:0,pull:0,legs:0};
+    EX.forEach(function(ex){
+      sizes[ex.day]++;
+      if(logged[ex.id]) counts[ex.day]++;
+    });
+    var plan=null;
+    ["push","pull","legs"].forEach(function(p){
+      if(counts[p]>0 && (plan===null || counts[p]>counts[plan])) plan=p;
+    });
+    if(plan && counts[plan]<sizes[plan]) st.unfinishedDays++;
+  });
   st.maxExW=function(ids){
     var m=null; ids.forEach(function(id){ if(id in st.exMaxW && (m===null||st.exMaxW[id]>m)) m=st.exMaxW[id]; });
     return m===null?0:m;
@@ -689,6 +822,70 @@ function buildAchievements(st){
 }
 function achKey(a){ return a.sec+"|"+a.name; }
 
+/* ---------- Titel ---------- */
+var RARITY = {
+  selten:   {label:"Selten",      color:"#5fbf6a"},
+  episch:   {label:"Episch",      color:"#4f93c9"},
+  mythisch: {label:"Mythisch",    color:"#e08a3c"},
+  legendaer:{label:"Legendär",    color:"#d94f45"},
+  sonder:   {label:"Sonderstufe", color:"#a86fe0"},
+  beruecht: {label:"Berüchtigt",  color:"#9aa832"}
+};
+
+var TITLES = [
+  /* SELTEN */
+  {id:"beharrlich", r:"selten", m:"Der Beharrliche",     w:"Die Beharrliche",     f:function(st){return st.maxWeekStreak>=12;}},
+  {id:"eisen",      r:"selten", m:"Eisenträger",         w:"Eisenträgerin",       f:function(st){return st.totalVol>=G(250000,150000);}},
+  {id:"vollstaend", r:"selten", m:"Der Vollständige",    w:"Die Vollständige",    f:function(st){return st.completeDays>=10;}},
+  {id:"vertikal",   r:"selten", m:"Vertikal Erhoben",    w:"Vertikal Erhoben",    f:function(st){return st.maxExW(["pu_breit","pu_eng"])>=G(20,10);}},
+  {id:"ausgewogen", r:"selten", m:"Der Ausgewogene",     w:"Die Ausgewogene",     f:function(st){return st.groupsAtLeast(2)>=6;}},
+  {id:"schwerkraft",r:"selten", m:"Schwerkraftverächter",w:"Schwerkraftverächterin",f:function(st){return st.maxExW(["dips"])>=G(40,20);}},
+  /* EPISCH */
+  {id:"tonnenschwer",r:"episch",m:"Der Tonnenschwere",   w:"Die Tonnenschwere",   f:function(st){return st.totalVol>=G(1000000,600000);}},
+  {id:"unbeugsam",  r:"episch", m:"Der Unbeugsame",      w:"Die Unbeugsame",      f:function(st){return st.maxWeekStreak>=26;}},
+  {id:"diamant",    r:"episch", m:"Diamantschmied",      w:"Diamantschmiedin",    f:function(st){return st.bestLeague()>=4;}},
+  {id:"hundertfach",r:"episch", m:"Der Hundertfache",    w:"Die Hundertfache",    f:function(st){return st.workoutDays>=100;}},
+  {id:"zweilasten", r:"episch", m:"Träger zweier Lasten",w:"Trägerin zweier Lasten",f:function(st){return st.maxDayVol>=G(25000,15000);}},
+  {id:"rastlos",    r:"episch", m:"Der Rastlose",        w:"Die Rastlose",        f:function(st){return st.streak3x>=8;}},
+  {id:"unsterbl",   r:"episch", m:"Der Unsterbliche",    w:"Die Unsterbliche",    f:function(st){return st.maxDayStreak>=14;}},
+  /* MYTHISCH */
+  {id:"herrscher",  r:"mythisch",m:"Herrscher der Schwerkraft",w:"Herrscherin der Schwerkraft",f:function(st){return st.bestLeague()>=5;}},
+  {id:"ewig",       r:"mythisch",m:"Der Ewige",          w:"Die Ewige",           f:function(st){return st.maxWeekStreak>=52;}},
+  {id:"titan",      r:"mythisch",m:"Titan",              w:"Titanin",             f:function(st){return st.totalVol>=G(5000000,3000000);}},
+  {id:"schattenf",  r:"mythisch",m:"Schattenfürst",      w:"Schattenfürstin",     f:function(st){return st.groupsAtLeast(3)>=6;}},
+  {id:"unermuedl",  r:"mythisch",m:"Der Unermüdliche",   w:"Die Unermüdliche",    f:function(st){return st.workoutDays>=250;}},
+  {id:"erwacht",    r:"mythisch",m:"Der Erwachte",       w:"Die Erwachte",        f:function(st){return st.level>=25;}},
+  /* LEGENDÄR */
+  {id:"koloss",     r:"legendaer",m:"Kolossbrecher",     w:"Kolossbrecherin",     f:function(st){return st.maxSetLoad>=G(300,180);}},
+  {id:"nachtw",     r:"legendaer",m:"Nachtwandler",      w:"Nachtwandlerin",      f:function(st){return st.lateDays>=20;}},
+  {id:"fruehauf",   r:"legendaer",m:"Der Frühaufsteher", w:"Die Frühaufsteherin", f:function(st){return st.earlyDays>=20;}},
+  {id:"zweisonnen", r:"legendaer",m:"Wandler zweier Sonnen",w:"Wandlerin zweier Sonnen",f:function(st){return st.tripleDay;}},
+  {id:"unmoeglich", r:"legendaer",m:"Der Unmögliche",    w:"Die Unmögliche",      f:function(st){return st.absOnlyDayVol>=G(10000,6000);}},
+  {id:"namenlos",   r:"legendaer",m:"Der Namenlose",     w:"Die Namenlose",       f:function(){return false;}},
+  /* SONDERSTUFE */
+  {id:"monarch",    r:"sonder",  m:"Schattenmonarch",    w:"Schattenmonarchin",   f:function(st){return st.groupsAtLeast(5)>=6;}},
+  /* BERÜCHTIGT (versteckt bis freigeschaltet) */
+  {id:"verschollen",r:"beruecht",m:"Der Verschollene",   w:"Die Verschollene",    f:function(st){return st.maxGapWeeks>=8;}},
+  {id:"staub",      r:"beruecht",m:"Staubfänger",        w:"Staubfängerin",       f:function(st){return st.returnedAfterWeeks>=12;}},
+  {id:"fabulier",   r:"beruecht",m:"Der Fabulierer",     w:"Die Fabuliererin",    f:function(st){return st.maxProgramsPerDay>5;}},
+  {id:"zahlendreh", r:"beruecht",m:"Zahlendreher",       w:"Zahlendreherin",      f:function(st){return st.outlier;}},
+  {id:"halbherzig", r:"beruecht",m:"Der Halbherzige",    w:"Die Halbherzige",     f:function(st){return st.unfinishedDays>=5;}}
+];
+function titleName(t){ return (S.profile&&S.profile.gender==="w")?t.w:t.m; }
+function titleById(id){ for(var i=0;i<TITLES.length;i++) if(TITLES[i].id===id) return TITLES[i]; return null; }
+
+function earnedTitles(st){
+  st = st || computeStats();
+  var out={}, n=0, positives=0;
+  TITLES.forEach(function(t){ if(t.r!=="beruecht" && t.id!=="namenlos") positives++; });
+  TITLES.forEach(function(t){
+    if(t.id==="namenlos") return;
+    if(t.f(st)){ out[t.id]=1; if(t.r!=="beruecht") n++; }
+  });
+  if(n>=positives) out["namenlos"]=1;
+  return out;
+}
+
 function checkAchievements(notify){
   updateLeaguePeak();
   var st=computeStats();
@@ -704,11 +901,106 @@ function checkAchievements(notify){
     }
   });
   save();
+  /* neue Titel melden */
+  var e2=earnedTitles(st);
+  S.titlesSeen=S.titlesSeen||{};
+  var newT=[];
+  Object.keys(e2).forEach(function(id){
+    if(!S.titlesSeen[id]){ S.titlesSeen[id]=1; var t=titleById(id); if(t) newT.push(titleName(t)); }
+  });
+  save();
+  if(notify && newT.length){
+    setTimeout(function(){ toast("👑 Titel: "+newT[0]); }, newly.length?3600:1900);
+  }
   if(notify && newly.length){
     setTimeout(function(){
       toast("🏅 "+(newly.length===1 ? newly[0] : newly.length+" neue Erfolge!"));
     }, 1900);
   }
+}
+
+function renderHudTitle(){
+  var el=document.getElementById("hudTitle");
+  var t=S.title?titleById(S.title):null;
+  if(!t){
+    el.textContent="Titel wählen";
+    el.className=""; el.style.color="";
+    return;
+  }
+  el.textContent=titleName(t);
+  el.className = t.r==="sonder" ? "shimmer" : "";
+  el.style.color = t.r==="sonder" ? "" : RARITY[t.r].color;
+}
+
+var titleQuery="";
+function titleListHTML(){
+  var st=computeStats(), earned=earnedTitles(st);
+  var q=titleQuery.trim().toLowerCase();
+  /* seltenste unten */
+  var order=["beruecht","selten","episch","mythisch","legendaer","sonder"];
+  var anyBad=false;
+  TITLES.forEach(function(t){ if(t.r==="beruecht" && earned[t.id]) anyBad=true; });
+  var visible=TITLES.filter(function(t){ return t.r!=="beruecht" || earned[t.id]; });
+  var total=TITLES.filter(function(t){ return t.r!=="beruecht"; }).length +
+            (anyBad?visible.filter(function(t){return t.r==="beruecht";}).length:0);
+  var got=Object.keys(earned).length;
+
+  var html='<div class="t-count"><b>'+got+'</b> von '+total+' Titeln freigeschaltet</div>';
+  if(S.title){
+    html+='<div class="t-row" data-id="__none"><span class="t-check"></span>'+
+          '<span class="t-name" style="color:var(--text-dim)">Kein Titel anzeigen</span></div>';
+  }
+  var list=visible.slice().sort(function(a,b){ return order.indexOf(a.r)-order.indexOf(b.r); });
+  var shown=0, lastRar=null;
+  list.forEach(function(t){
+    var name=titleName(t);
+    if(q && name.toLowerCase().indexOf(q)===-1) return;
+    shown++;
+    if(t.r!==lastRar){
+      html+='<div class="t-rarhead" style="color:'+RARITY[t.r].color+'">'+RARITY[t.r].label.toUpperCase()+'</div>';
+      lastRar=t.r;
+    }
+    var ok=!!earned[t.id];
+    html+='<div class="t-row'+(ok?"":" locked")+(S.title===t.id?" active":"")+'"'+(ok?' data-id="'+t.id+'"':'')+'>'+
+      '<span class="t-check">'+(S.title===t.id?"✓":"")+'</span>'+
+      '<span class="t-name" style="color:'+(ok?RARITY[t.r].color:"var(--text-dim)")+'">'+name+'</span></div>';
+  });
+  if(shown===0) html+='<div class="t-empty">Kein Titel gefunden.</div>';
+  return html;
+}
+
+function refreshTitleList(){
+  var c=document.getElementById("titleListBox"); if(!c) return;
+  c.innerHTML=titleListHTML();
+  c.querySelectorAll(".t-row[data-id]").forEach(function(row){
+    row.addEventListener("click", function(){
+      var id=row.getAttribute("data-id");
+      S.title = (id==="__none"||S.title===id) ? null : id;
+      save(); refreshTitleList(); renderHudTitle();
+    });
+  });
+}
+
+function openTitlePopup(){
+  var box=document.getElementById("summaryBox");
+  box.className="summary info";
+  box.innerHTML=
+    '<button class="popup-x" id="popupX" aria-label="schließen">×</button>'+
+    '<h3>TITEL</h3>'+
+    '<input id="titleSearch" class="t-search" type="text" placeholder="Titel suchen…">'+
+    '<div class="info-scroll" id="titleListBox"></div>'+
+    '<button id="closeOverlay">Schließen</button>';
+  document.getElementById("overlay").classList.add("show");
+  refreshTitleList();
+  document.getElementById("titleSearch").addEventListener("input", function(ev){
+    titleQuery=ev.target.value; refreshTitleList();
+  });
+  function closeT(){
+    document.getElementById("overlay").classList.remove("show");
+    box.className="summary"; titleQuery="";
+  }
+  document.getElementById("closeOverlay").addEventListener("click", closeT);
+  document.getElementById("popupX").addEventListener("click", closeT);
 }
 
 function renderAchievements(){
@@ -756,6 +1048,7 @@ function renderHud(){
   document.getElementById("xpNeed").textContent=lv.need;
   document.getElementById("xpBar").style.width=Math.round(lv.into/lv.need*100)+"%";
   document.getElementById("streakVal").textContent=computeStats().weekStreak;
+  renderHudTitle();
   var c=2*Math.PI*30;
   document.getElementById("ringFill").setAttribute("stroke-dasharray",(c*lv.into/lv.need)+" "+c);
 }
@@ -1001,6 +1294,7 @@ document.getElementById("resetBtn").addEventListener("click", function(){
   if(!confirm("Wirklich ALLE Daten löschen?")) return;
   S=def(); save(); renderAll(); toast("Zurückgesetzt");
 });
+document.getElementById("titleBtn").addEventListener("click", openTitlePopup);
 document.getElementById("finishBtn").addEventListener("click", finishWorkout);
 document.getElementById("leagueInfoBtn").addEventListener("click", function(){
   var box=document.getElementById("summaryBox");
