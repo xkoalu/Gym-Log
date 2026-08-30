@@ -48,16 +48,29 @@
 
   /* exercise cards */
   .ex-card{background:var(--bg-elev);border:1px solid var(--border);border-radius:14px;padding:12px 12px 10px;margin-bottom:10px;}
-  .ex-head{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
+  .ex-head{display:flex;align-items:center;gap:8px;cursor:pointer;}
+  .ex-card.open .ex-head{margin-bottom:11px;}
   .ex-dot{width:8px;height:8px;border-radius:50%;flex:none;}
   .ex-name{font-size:13.5px;font-weight:600;flex:1;line-height:1.3;}
   .ex-last{font-family:var(--mono);font-size:10px;color:var(--text-dim);}
-  .ex-inputs{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end;}
+  .chev{font-size:11px;color:var(--text-dim);transition:transform .2s;flex:none;}
+  .ex-card.open .chev{transform:rotate(180deg);}
+  .set-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+  .set-idx{font-family:var(--mono);font-size:10px;color:var(--text-dim);width:16px;text-align:center;flex:none;}
+  .set-row input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:var(--mono);font-size:15px;padding:9px 8px;text-align:center;}
+  .set-row input:focus{outline:none;border-color:var(--teal);}
+  .set-del{background:none;border:1px solid var(--border);border-radius:9px;color:var(--rust);font-size:16px;width:34px;height:39px;flex:none;}
+  .set-lbls{display:flex;gap:8px;margin-bottom:5px;}
+  .set-lbls span{font-family:var(--mono);font-size:9px;letter-spacing:.08em;color:var(--text-dim);flex:1;text-align:center;}
+  .set-lbls .sp-idx{width:16px;flex:none;}
+  .set-lbls .sp-del{width:34px;flex:none;}
+  .set-actions{display:flex;gap:8px;margin-top:6px;}
+  .add-set{flex:1;background:var(--bg);border:1px dashed var(--border);border-radius:9px;color:var(--text-dim);font-size:12px;padding:10px 0;font-family:var(--mono);}
+  .log-all{flex:1;background:var(--teal);border:none;border-radius:9px;color:#12141a;font-weight:700;font-size:13px;padding:10px 0;}
+  .log-all:active{transform:scale(.97);}
   .field label{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.08em;color:var(--text-dim);margin-bottom:4px;}
   .field input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:var(--mono);font-size:15px;padding:9px 8px;text-align:center;}
   .field input:focus{outline:none;border-color:var(--teal);}
-  .log-btn{background:var(--bg-elev2);border:1px solid var(--border);border-radius:9px;color:var(--teal);font-size:19px;font-weight:700;width:44px;height:41px;transition:transform .1s;}
-  .log-btn:active{transform:scale(.9);}
   .assist-toggle{display:flex;gap:6px;margin:0 0 9px;}
   .assist-toggle button{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:10.5px;padding:6px 0;font-family:var(--mono);letter-spacing:.03em;}
   .assist-toggle button.active[data-m="plus"]{color:var(--teal);border-color:var(--teal);}
@@ -282,7 +295,24 @@ var LEAGUES = [
 function def(){ return {profile:null, totalXP:0, streak:0, lastLogDate:null, finishedDates:[], entries:[], lastInputs:{}}; }
 function load(){
   try{ var r=localStorage.getItem(KEY); if(!r) return def();
-    var p=JSON.parse(r); return Object.assign(def(), p);
+    var p=JSON.parse(r); var st=Object.assign(def(), p);
+    /* Migration: altes Format (w/reps/sets) -> Satzliste */
+    st.entries.forEach(function(e){
+      if(!e.setList && e.sets){
+        e.setList=[];
+        for(var i=0;i<e.sets;i++) e.setList.push({w:e.w, eff:e.eff, reps:e.reps});
+      }
+    });
+    var li={};
+    Object.keys(st.lastInputs||{}).forEach(function(k){
+      var v=st.lastInputs[k];
+      if(v && v.sets && !v.setList && typeof v.sets==="number"){
+        var arr=[]; for(var i=0;i<v.sets;i++) arr.push({w:Math.abs(v.w), reps:v.reps});
+        li[k]={assist:v.w<0, setList:arr};
+      } else li[k]=v;
+    });
+    st.lastInputs=li;
+    return st;
   }catch(e){ return def(); }
 }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){ toast("Speichern fehlgeschlagen"); } }
@@ -312,29 +342,43 @@ function ageFactor(age){
 }
 
 /* ---------- Logging ---------- */
+var UI = {open:{}, sets:{}, assist:{}};
+
+function initExUI(exId){
+  if(UI.sets[exId]) return;
+  var li = S.lastInputs[exId];
+  if(li && li.setList){
+    UI.sets[exId] = li.setList.map(function(s){ return {w:String(s.w), reps:String(s.reps)}; });
+    UI.assist[exId] = !!li.assist;
+  } else {
+    UI.sets[exId] = [{w:"", reps:""}];
+    UI.assist[exId] = false;
+  }
+}
+
 function addEntry(exId){
   var ex = exById(exId);
-  var w = parseFloat(document.getElementById("w_"+exId).value.replace(",","."));
-  var reps = parseInt(document.getElementById("r_"+exId).value, 10);
-  var sets = parseInt(document.getElementById("s_"+exId).value, 10);
-  if(isNaN(reps)||isNaN(sets)||reps<1||sets<1){ toast("Wdh. und Sätze angeben"); return; }
-  if(isNaN(w)) w = 0;
-  w = Math.abs(w);
-  if(ex.bw===1){
-    var t=document.getElementById("t_"+exId);
-    if(t){
-      var act=t.querySelector("button.active");
-      if(act && act.getAttribute("data-m")==="minus") w = -w;
-    }
-  }
   if(ex.bw>0 && !S.profile){ toast("Erst Profil anlegen (Körpergewicht)"); switchTab("profile"); return; }
-
+  var assist = ex.bw===1 && UI.assist[exId];
   var bwPart = ex.bw>0 && S.profile ? S.profile.weight*ex.bw : 0;
-  var eff = w + bwPart;
-  if(eff<=0){ toast(w<0 ? "Unterstützung übersteigt dein Körpergewicht" : "Gewicht angeben"); return; }
-  var volume = eff * reps * sets;
-  var xp = sets*10 + Math.floor(volume/250);
 
+  var rows=[], volume=0;
+  var raw = UI.sets[exId] || [];
+  for(var i=0;i<raw.length;i++){
+    var w = parseFloat(String(raw[i].w).replace(",","."));
+    var reps = parseInt(raw[i].reps, 10);
+    if(isNaN(reps) && isNaN(w)) continue; /* komplett leere Zeile überspringen */
+    if(isNaN(reps)||reps<1){ toast("Satz "+(i+1)+": Wdh. angeben"); return; }
+    if(isNaN(w)) w = 0;
+    w = Math.abs(w) * (assist ? -1 : 1);
+    var eff = w + bwPart;
+    if(eff<=0){ toast(assist ? "Satz "+(i+1)+": Unterstützung übersteigt dein Körpergewicht" : "Satz "+(i+1)+": Gewicht angeben"); return; }
+    rows.push({w:w, eff:eff, reps:reps});
+    volume += eff*reps;
+  }
+  if(rows.length===0){ toast("Mindestens einen Satz ausfüllen"); return; }
+
+  var xp = rows.length*10 + Math.floor(volume/250);
   S.totalXP += xp;
   var d = today();
   if(S.lastLogDate !== d){
@@ -342,10 +386,11 @@ function addEntry(exId){
     S.lastLogDate = d;
   }
   S.entries.push({id:Date.now()+"_"+Math.random().toString(36).slice(2,6), ex:exId, date:d, ts:Date.now(),
-                  w:w, eff:eff, reps:reps, sets:sets, vol:volume, xp:xp});
-  S.lastInputs[exId] = {w:w, reps:reps, sets:sets};
+                  setList:rows, vol:volume, xp:xp});
+  S.lastInputs[exId] = {assist:assist, setList:rows.map(function(r){ return {w:Math.abs(r.w), reps:r.reps}; })};
+  UI.open[exId] = false;
   save(); renderAll();
-  toast("+"+xp+" XP · "+fmt(volume)+" kg Volumen");
+  toast("+"+xp+" XP · "+rows.length+" Sätze · "+fmt(volume)+" kg");
 }
 
 function deleteEntry(id){
@@ -365,7 +410,7 @@ function finishWorkout(){
   var bonus = 0;
   if(S.finishedDates.indexOf(d)===-1){ bonus=60; S.totalXP+=bonus; S.finishedDates.push(d); save(); }
   var sets=0, entries=0;
-  S.entries.forEach(function(e){ if(e.date===d){ sets+=e.sets; entries++; } });
+  S.entries.forEach(function(e){ if(e.date===d){ sets += e.setList ? e.setList.length : (e.sets||0); entries++; } });
   var box=document.getElementById("summaryBox");
   box.innerHTML =
     '<h3>WORKOUT ABGESCHLOSSEN</h3>'+
@@ -393,8 +438,11 @@ function groupScores(){
   var best = {}; // exId -> best est1RM (letzte 90 Tage)
   S.entries.forEach(function(e){
     if(e.ts<cutoff) return;
-    var v = est1RM(e.eff, e.reps);
-    if(!best[e.ex] || v>best[e.ex]) best[e.ex]=v;
+    var sets = e.setList || [{eff:e.eff, reps:e.reps}];
+    sets.forEach(function(s){
+      var v = est1RM(s.eff, s.reps);
+      if(!best[e.ex] || v>best[e.ex]) best[e.ex]=v;
+    });
   });
   var res={};
   GROUPS.forEach(function(g){
@@ -433,31 +481,73 @@ function renderExList(){
   var wrap=document.getElementById("exList"); wrap.innerHTML="";
   EX.forEach(function(ex){
     if(ex.day!==activeDay) return;
-    var li=S.lastInputs[ex.id]||{};
-    var isAssist = li.w!==undefined && li.w<0;
-    var absW = li.w!==undefined ? Math.abs(li.w) : "";
-    var card=document.createElement("div"); card.className="ex-card";
-    var toggle = ex.bw===1 ?
-      '<div class="assist-toggle" id="t_'+ex.id+'">'+
-      '<button data-m="plus"'+(!isAssist?' class="active"':'')+'>+ Zusatzgewicht</button>'+
-      '<button data-m="minus"'+(isAssist?' class="active"':'')+'>− Unterstützt</button></div>' : '';
-    card.innerHTML=
+    initExUI(ex.id);
+    var open = !!UI.open[ex.id];
+    var li = S.lastInputs[ex.id];
+    var summary = "";
+    if(li && li.setList && li.setList.length){
+      summary = li.setList.map(function(s){ return (li.assist?"-":"")+s.w; }).join("/")+" kg";
+    }
+    var card=document.createElement("div");
+    card.className="ex-card"+(open?" open":"");
+
+    var head =
       '<div class="ex-head"><span class="ex-dot" style="background:'+GROUP_COLORS[ex.group]+'"></span>'+
       '<span class="ex-name">'+ex.name+'</span>'+
-      '<span class="ex-last">'+(li.w!==undefined ? li.w+"kg × "+li.reps : "")+'</span></div>'+
-      toggle+
-      '<div class="ex-inputs">'+
-      '<div class="field"><label>KG</label><input id="w_'+ex.id+'" type="text" inputmode="decimal" value="'+absW+'" placeholder="0"></div>'+
-      '<div class="field"><label>WDH</label><input id="r_'+ex.id+'" type="number" inputmode="numeric" value="'+(li.reps||"")+'" placeholder="10"></div>'+
-      '<div class="field"><label>SÄTZE</label><input id="s_'+ex.id+'" type="number" inputmode="numeric" value="'+(li.sets||"")+'" placeholder="3"></div>'+
-      '<button class="log-btn" aria-label="loggen">＋</button></div>';
-    card.querySelector(".log-btn").addEventListener("click", function(){ addEntry(ex.id); });
-    card.querySelectorAll(".assist-toggle button").forEach(function(tb){
-      tb.addEventListener("click", function(){
-        card.querySelectorAll(".assist-toggle button").forEach(function(x){ x.classList.remove("active"); });
-        tb.classList.add("active");
-      });
+      '<span class="ex-last">'+summary+'</span>'+
+      '<span class="chev">▼</span></div>';
+
+    var body = "";
+    if(open){
+      var toggle = ex.bw===1 ?
+        '<div class="assist-toggle">'+
+        '<button data-m="plus"'+(!UI.assist[ex.id]?' class="active"':'')+'>+ Zusatzgewicht</button>'+
+        '<button data-m="minus"'+(UI.assist[ex.id]?' class="active"':'')+'>− Unterstützt</button></div>' : '';
+      var rows = UI.sets[ex.id].map(function(s,i){
+        return '<div class="set-row" data-i="'+i+'">'+
+          '<span class="set-idx">'+(i+1)+'</span>'+
+          '<input class="in-w" type="text" inputmode="decimal" value="'+s.w+'" placeholder="kg">'+
+          '<input class="in-r" type="number" inputmode="numeric" value="'+s.reps+'" placeholder="Wdh">'+
+          (UI.sets[ex.id].length>1 ? '<button class="set-del">−</button>' : '<span style="width:34px;flex:none;"></span>')+
+          '</div>';
+      }).join("");
+      body = toggle+
+        '<div class="set-lbls"><span class="sp-idx"></span><span>'+(ex.bw===1?'± KG':'KG')+'</span><span>WDH</span><span class="sp-del"></span></div>'+
+        rows+
+        '<div class="set-actions"><button class="add-set">＋ Satz</button><button class="log-all">Loggen ✓</button></div>';
+    }
+    card.innerHTML = head + body;
+
+    card.querySelector(".ex-head").addEventListener("click", function(){
+      UI.open[ex.id] = !open;
+      renderExList();
     });
+
+    if(open){
+      card.querySelectorAll(".set-row").forEach(function(row){
+        var i = parseInt(row.getAttribute("data-i"),10);
+        row.querySelector(".in-w").addEventListener("input", function(ev){ UI.sets[ex.id][i].w = ev.target.value; });
+        row.querySelector(".in-r").addEventListener("input", function(ev){ UI.sets[ex.id][i].reps = ev.target.value; });
+        var del=row.querySelector(".set-del");
+        if(del) del.addEventListener("click", function(){
+          UI.sets[ex.id].splice(i,1);
+          renderExList();
+        });
+      });
+      card.querySelector(".add-set").addEventListener("click", function(){
+        var arr=UI.sets[ex.id];
+        var last=arr[arr.length-1];
+        arr.push({w:last?last.w:"", reps:last?last.reps:""});
+        renderExList();
+      });
+      card.querySelector(".log-all").addEventListener("click", function(){ addEntry(ex.id); });
+      card.querySelectorAll(".assist-toggle button").forEach(function(tb){
+        tb.addEventListener("click", function(){
+          UI.assist[ex.id] = tb.getAttribute("data-m")==="minus";
+          renderExList();
+        });
+      });
+    }
     wrap.appendChild(card);
   });
 }
@@ -469,10 +559,13 @@ function renderHistory(){
   }
   S.entries.slice(-8).reverse().forEach(function(e){
     var ex=exById(e.ex);
+    var det = e.setList
+      ? e.setList.map(function(s){ return s.w+"×"+s.reps; }).join(", ")
+      : e.w+"kg × "+e.reps+" × "+e.sets;
     var li=document.createElement("li");
     li.innerHTML='<span class="ex-dot" style="background:'+GROUP_COLORS[ex.group]+'"></span>'+
       '<span class="hname">'+ex.name+'</span>'+
-      '<span class="hdet">'+e.w+'kg × '+e.reps+' × '+e.sets+' · '+fmt(e.vol)+'kg</span>'+
+      '<span class="hdet">'+det+' · '+fmt(e.vol)+'kg</span>'+
       '<button class="hdel">×</button>';
     li.querySelector(".hdel").addEventListener("click", function(){ deleteEntry(e.id); });
     list.appendChild(li);
@@ -563,8 +656,11 @@ function renderExChart(){
   var byDate={};
   S.entries.forEach(function(e){
     if(e.ex!==exId) return;
-    var v=est1RM(e.eff,e.reps);
-    if(!byDate[e.date]||v>byDate[e.date]) byDate[e.date]=v;
+    var sets = e.setList || [{eff:e.eff, reps:e.reps}];
+    sets.forEach(function(s){
+      var v=est1RM(s.eff,s.reps);
+      if(!byDate[e.date]||v>byDate[e.date]) byDate[e.date]=v;
+    });
   });
   var dates=Object.keys(byDate).sort().slice(-15);
   var pts=dates.map(function(d){ return {y:byDate[d], label:shortDate(d)}; });
