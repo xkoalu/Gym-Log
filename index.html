@@ -108,6 +108,21 @@
   .legend-row .l-name{width:70px;flex:none;font-weight:600;}
   .legend-row .l-range{font-family:var(--mono);font-size:11px;color:var(--text-dim);flex:1;}
   .legend-row .l-bar{width:6px;height:16px;border-radius:3px;flex:none;}
+  /* achievements */
+  .ach-sec{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--text-dim);margin:16px 0 8px 2px;}
+  .ach-sec:first-child{margin-top:0;}
+  .ach-card{display:flex;gap:11px;align-items:center;background:var(--bg-elev);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px;}
+  .ach-card.locked{opacity:.5;}
+  .ach-ico{font-size:19px;width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex:none;background:var(--bg-elev2);}
+  .ach-main{flex:1;min-width:0;}
+  .ach-name{font-size:12.5px;font-weight:600;line-height:1.3;}
+  .ach-desc{font-size:10.5px;color:var(--text-dim);margin-top:1px;line-height:1.35;}
+  .ach-prog{height:4px;background:var(--bg-elev2);border-radius:3px;margin-top:6px;overflow:hidden;}
+  .ach-prog span{display:block;height:100%;background:var(--teal);border-radius:3px;}
+  .ach-badge{font-family:var(--mono);font-size:12px;flex:none;}
+  .ach-badge.count{color:var(--gold);font-weight:700;}
+  .ach-badge.done{color:var(--teal);font-size:15px;}
+  .ach-badge.pct{color:var(--text-dim);font-size:10px;}
   .h2row{display:flex;align-items:center;justify-content:space-between;margin-bottom:0;}
   .h2row h2{margin-bottom:10px;}
   .info-btn{background:none;border:none;color:var(--text-dim);font-size:18px;padding:0 4px 10px;line-height:1;}
@@ -169,7 +184,7 @@
       <div class="hud-title">GYM.LOG · CHARAKTERBOGEN</div>
       <div class="xp-line"><b id="xpInto">0</b> / <span id="xpNeed">100</span> XP</div>
       <div class="xp-bar-track"><div class="xp-bar-fill" id="xpBar" style="width:0%"></div></div>
-      <div class="streak">🔥 <span id="streakVal">0</span>&nbsp;Tage Streak</div>
+      <div class="streak">🔥 <span id="streakVal">0</span>&nbsp;Wochen-Streak</div>
     </div>
   </header>
 
@@ -215,6 +230,14 @@
     </section>
   </div>
 
+  <!-- ERFOLGE -->
+  <div class="tab" id="tab-ach">
+    <section>
+      <h2>ERFOLGE</h2>
+      <div id="achList"></div>
+    </section>
+  </div>
+
   <!-- PROFIL -->
   <div class="tab" id="tab-profile">
     <section>
@@ -248,6 +271,7 @@
   <button data-tab="training" class="active"><span class="ico">🏋️</span>Training</button>
   <button data-tab="progress"><span class="ico">📈</span>Fortschritt</button>
   <button data-tab="leagues"><span class="ico">🏆</span>Ligen</button>
+  <button data-tab="ach"><span class="ico">🏅</span>Erfolge</button>
   <button data-tab="profile"><span class="ico">👤</span>Profil</button>
 </nav>
 
@@ -264,11 +288,11 @@ var KEY = "gymlog_v2_state";
    bench = geschätztes 1RM-Niveau des Durchschnitts (Intermediate) als Faktor × Körpergewicht (männlich).
    bw    = Körpergewichts-Anteil, der beim Loggen automatisch zum eingetragenen Gewicht addiert wird. */
 var EX = [
-  {id:"bench_m",   day:"push", group:"Brust",     name:"Bankdrücken (Maschine)",           bench:1.00, bw:0},
-  {id:"iso_chest", day:"push", group:"Brust",     name:"ISO Lateral Wide Chest",           bench:1.00, bw:0},
+  {id:"bench_m",   day:"push", group:"Brust",     name:"Bankdrücken (Maschine)",           bench:1.00, bw:0, perSide:true},
+  {id:"iso_chest", day:"push", group:"Brust",     name:"ISO Lateral Wide Chest",           bench:1.00, bw:0, perSide:true},
   {id:"butterfly", day:"push", group:"Brust",     name:"Butterfly",                        bench:0.90, bw:0},
   {id:"dips",      day:"push", group:"Brust",     name:"Dips",                             bench:1.65, bw:1, genderF:0.80},
-  {id:"shoulder_p",day:"push", group:"Schultern", name:"Schulterdrücken (Maschine)",       bench:0.75, bw:0},
+  {id:"shoulder_p",day:"push", group:"Schultern", name:"Schulterdrücken (Maschine)",       bench:0.75, bw:0, perSide:true},
   {id:"biz_unten", day:"push", group:"Arme",      name:"Trizeps Kabelzug (nach unten)",    bench:0.55, bw:0},
   {id:"biz_kopf",  day:"push", group:"Arme",      name:"Trizeps Kabelzug (über Kopf)",     bench:0.45, bw:0},
   {id:"legraise",  day:"push", group:"Bauch",     name:"Beinheben (Zusatzgewicht)",        bench:0.65, bw:0.3},
@@ -308,7 +332,7 @@ var LEAGUES = [
 ];
 
 /* ---------- State ---------- */
-function def(){ return {profile:null, totalXP:0, streak:0, lastLogDate:null, finishedDates:[], entries:[], lastInputs:{}}; }
+function def(){ return {profile:null, totalXP:0, streak:0, lastLogDate:null, finishedDates:[], entries:[], lastInputs:{}, leaguePeak:{}, achSeen:{}}; }
 function load(){
   try{ var r=localStorage.getItem(KEY); if(!r) return def();
     var p=JSON.parse(r); var st=Object.assign(def(), p);
@@ -317,6 +341,15 @@ function load(){
       if(!e.setList && e.sets){
         e.setList=[];
         for(var i=0;i<e.sets;i++) e.setList.push({w:e.w, eff:e.eff, reps:e.reps});
+      }
+    });
+    /* Migration: Übungen mit Gewicht pro Seite -> effektives Gewicht verdoppeln */
+    st.entries.forEach(function(e){
+      var ex=exById(e.ex);
+      if(ex && ex.perSide && !e.ps && e.setList){
+        var v=0;
+        e.setList.forEach(function(s){ s.eff=s.w*2; v+=s.eff*s.reps; });
+        e.vol=v; e.ps=1;
       }
     });
     var li={};
@@ -377,6 +410,7 @@ function addEntry(exId){
   if(ex.bw>0 && !S.profile){ toast("Erst Profil anlegen (Körpergewicht)"); switchTab("profile"); return; }
   var assist = ex.bw===1 && UI.assist[exId];
   var bwPart = ex.bw>0 && S.profile ? S.profile.weight*ex.bw : 0;
+  var mult = ex.perSide ? 2 : 1;
 
   var rows=[], volume=0;
   var raw = UI.sets[exId] || [];
@@ -387,7 +421,7 @@ function addEntry(exId){
     if(isNaN(reps)||reps<1){ toast("Satz "+(i+1)+": Wdh. angeben"); return; }
     if(isNaN(w)) w = 0;
     w = Math.abs(w) * (assist ? -1 : 1);
-    var eff = w + bwPart;
+    var eff = w*mult + bwPart;
     if(eff<=0){ toast(assist ? "Satz "+(i+1)+": Unterstützung übersteigt dein Körpergewicht" : "Satz "+(i+1)+": Gewicht angeben"); return; }
     rows.push({w:w, eff:eff, reps:reps});
     volume += eff*reps;
@@ -402,10 +436,12 @@ function addEntry(exId){
     S.lastLogDate = d;
   }
   S.entries.push({id:Date.now()+"_"+Math.random().toString(36).slice(2,6), ex:exId, date:d, ts:Date.now(),
-                  setList:rows, vol:volume, xp:xp});
+                  setList:rows, vol:volume, xp:xp, ps:ex.perSide?1:0});
   S.lastInputs[exId] = {assist:assist, setList:rows.map(function(r){ return {w:Math.abs(r.w), reps:r.reps}; })};
   UI.open[exId] = false;
-  save(); renderAll();
+  save();
+  checkAchievements(true);
+  renderAll();
   toast("+"+xp+" XP · "+rows.length+" Sätze · "+fmt(volume)+" kg");
 }
 
@@ -479,6 +515,237 @@ function leagueFor(score){
   return {idx:LEAGUES.length-1, l:LEAGUES[LEAGUES.length-1]};
 }
 
+/* ---------- Wochen & Statistiken ---------- */
+function pad2(n){ return (n<10?"0":"")+n; }
+function localISO(d){ return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
+function weekStart(iso){
+  var d=new Date(iso+"T12:00:00");
+  var day=(d.getDay()+6)%7; /* Mo=0 */
+  d.setDate(d.getDate()-day);
+  return localISO(d);
+}
+function addDays(iso,n){
+  var d=new Date(iso+"T12:00:00"); d.setDate(d.getDate()+n); return localISO(d);
+}
+
+function computeStats(){
+  var st={dayVol:{}, totalVol:0, dates:{}, weekSet:{}, exMaxW:{}, exUnassisted:{},
+          early:false, late:false, dayCats:{}, dayExs:{}};
+  S.entries.forEach(function(e){
+    st.dayVol[e.date]=(st.dayVol[e.date]||0)+e.vol;
+    st.totalVol+=e.vol;
+    st.dates[e.date]=1;
+    st.weekSet[weekStart(e.date)]=1;
+    var ex=exById(e.ex); if(!ex) return;
+    var mult = ex.perSide ? 2 : 1;
+    (e.setList||[]).forEach(function(s){
+      if(s.w>=0){
+        var wTot = s.w*mult;
+        if(!(e.ex in st.exMaxW)||wTot>st.exMaxW[e.ex]) st.exMaxW[e.ex]=wTot;
+        st.exUnassisted[e.ex]=true;
+      }
+    });
+    var h=new Date(e.ts).getHours();
+    if(h<8) st.early=true;
+    if(h>=21) st.late=true;
+    (st.dayCats[e.date]=st.dayCats[e.date]||{})[ex.day]=1;
+    (st.dayExs[e.date]=st.dayExs[e.date]||{})[e.ex]=1;
+  });
+  st.workoutDays=Object.keys(st.dates).length;
+
+  /* Wochen-Streak: aktuelle Woche zählt, sobald trainiert; sonst ab letzter Woche */
+  var cw=weekStart(today());
+  var cur=0, w=st.weekSet[cw]?cw:addDays(cw,-7);
+  while(st.weekSet[w]){ cur++; w=addDays(w,-7); }
+  st.weekStreak=cur;
+  var weeks=Object.keys(st.weekSet).sort(), maxS=0, run=0;
+  for(var i=0;i<weeks.length;i++){
+    run = (i>0 && addDays(weeks[i-1],7)===weeks[i]) ? run+1 : 1;
+    if(run>maxS) maxS=run;
+  }
+  st.maxWeekStreak=maxS;
+
+  st.countVolDays=function(min){
+    var c=0; Object.keys(st.dayVol).forEach(function(d){ if(st.dayVol[d]>=min) c++; }); return c;
+  };
+  /* volle Wochen (Push+Pull+Legs) & Wochenenden (Sa+So) */
+  var weekCats={}, weekDays={};
+  Object.keys(st.dayCats).forEach(function(d){
+    var wk=weekStart(d);
+    weekCats[wk]=weekCats[wk]||{};
+    Object.keys(st.dayCats[d]).forEach(function(c){ weekCats[wk][c]=1; });
+    var dow=new Date(d+"T12:00:00").getDay();
+    weekDays[wk]=weekDays[wk]||{};
+    weekDays[wk][dow]=1;
+  });
+  st.fullWeeks=0; Object.keys(weekCats).forEach(function(wk){ var o=weekCats[wk]; if(o.push&&o.pull&&o.legs) st.fullWeeks++; });
+  st.weekends=0; Object.keys(weekDays).forEach(function(wk){ if(weekDays[wk][6]&&weekDays[wk][0]) st.weekends++; });
+  /* komplette Trainingstage: alle Übungen eines Plans an einem Datum */
+  st.completeDays=0;
+  Object.keys(st.dayExs).forEach(function(d){
+    ["push","pull","legs"].forEach(function(day){
+      var all=true, any=false;
+      EX.forEach(function(ex){ if(ex.day===day){ any=true; if(!st.dayExs[d][ex.id]) all=false; } });
+      if(any&&all) st.completeDays+=1;
+    });
+  });
+  st.level=levelFromXP(S.totalXP).level;
+  st.maxExW=function(ids){
+    var m=null; ids.forEach(function(id){ if(id in st.exMaxW && (m===null||st.exMaxW[id]>m)) m=st.exMaxW[id]; });
+    return m===null?0:m;
+  };
+  st.anyUnassisted=function(ids){
+    for(var i=0;i<ids.length;i++) if(st.exUnassisted[ids[i]]) return true; return false;
+  };
+  st.peak=function(g){ return (S.leaguePeak && S.leaguePeak[g]!==undefined) ? S.leaguePeak[g] : -1; };
+  return st;
+}
+
+function updateLeaguePeak(){
+  var sc=groupScores(); if(!sc) return;
+  S.leaguePeak=S.leaguePeak||{};
+  GROUPS.forEach(function(g){
+    if(sc[g]===null) return;
+    var idx=leagueFor(sc[g]).idx;
+    if(S.leaguePeak[g]===undefined || idx>S.leaguePeak[g]) S.leaguePeak[g]=idx;
+  });
+}
+
+/* ---------- Erfolge ---------- */
+function G(m,w){ return (S.profile&&S.profile.gender==="w")?w:m; }
+function kg(n){ return fmt(n)+" kg"; }
+
+function buildAchievements(st){
+  var A=[];
+  function once(sec,ico,name,desc,val,target){
+    A.push({sec:sec,ico:ico,name:name,desc:desc,type:"once",val:val,target:target});
+  }
+  function counter(sec,ico,name,desc,n){
+    A.push({sec:sec,ico:ico,name:name,desc:desc,type:"counter",n:n});
+  }
+  /* Tagesvolumen (Zähler) */
+  [["Bronze","🥉",5000,3000],["Silber","🥈",10000,6000],["Gold","🥇",15000,9000],["Platin","💠",20000,12000]]
+  .forEach(function(t){
+    var min=G(t[2],t[3]);
+    counter("TAGESVOLUMEN",t[1],"Tagespensum "+t[0],"≥ "+kg(min)+" an einem Tag bewegt (zählt Tage)",st.countVolDays(min));
+  });
+  /* Gesamtvolumen */
+  [["100-Tonnen-Club",100000,60000],["500-Tonnen-Club",500000,300000],["Millionen-Club",1000000,600000],["Legende: 5.000 Tonnen",5000000,3000000]]
+  .forEach(function(t){
+    var tg=G(t[1],t[2]);
+    once("GESAMTVOLUMEN","🏗️",t[0],"Insgesamt "+kg(tg)+" bewegt",st.totalVol,tg);
+  });
+  /* Wochen-Streaks */
+  [[4,"Ein Monat dran"],[8,"Zwei Monate dran"],[12,"Quartal komplett"],[26,"Halbes Jahr durchgezogen"],[52,"Ein ganzes Jahr!"]]
+  .forEach(function(t){
+    once("WOCHEN-STREAK","🔥",t[1],t[0]+" Wochen in Folge trainiert (längste Serie zählt)",st.maxWeekStreak,t[0]);
+  });
+  /* Workout-Anzahl */
+  [10,25,50,100,250].forEach(function(n){
+    once("KONSTANZ","📅",n+" Trainingstage","An "+n+" verschiedenen Tagen geloggt",st.workoutDays,n);
+  });
+  /* Level */
+  [5,10,25].forEach(function(l){
+    once("LEVEL","⭐","Level "+l,"Erreiche Level "+l,st.level,l);
+  });
+  /* Ligen */
+  [["Silber",1,"🥈"],["Gold",2,"🥇"],["Platin",3,"💠"],["Diamant",4,"💎"],["Meister",5,"👑"]]
+  .forEach(function(t){
+    var best=-1; GROUPS.forEach(function(g){ if(st.peak(g)>best) best=st.peak(g); });
+    once("LIGEN",t[2],t[0]+"-Liga","Erreiche in einer Muskelgruppe die "+t[0]+"-Liga",best,t[1]);
+  });
+  (function(){
+    var n=0; GROUPS.forEach(function(g){ if(st.peak(g)>=2) n++; });
+    once("LIGEN","🌟","Allrounder","Alle 6 Muskelgruppen mindestens in Gold",n,6);
+  })();
+  /* Übungs-Meilensteine */
+  function mile(ico,label,ids,mArr,wArr,unit){
+    var arr=G(mArr,wArr);
+    arr.forEach(function(tg){
+      once("ÜBUNGS-MEILENSTEINE",ico,label+" "+tg+" kg","Ein Satz "+label+" mit mindestens "+tg+" kg"+(unit||""),st.maxExW(ids),tg);
+    });
+  }
+  mile("🏋️","Bankdrücken",["bench_m"],[60,90,120],[30,50,70]);
+  mile("🦵","Beinpresse",["legpress"],[150,250,350],[90,160,230]);
+  mile("🚣","Rudern",["row_eng","row_breit"],[70,95,120],[40,60,80]);
+  mile("💪","Schulterdrücken",["shoulder_p"],[50,75,100],[25,40,60]);
+  once("ÜBUNGS-MEILENSTEINE","🧗","Erster Pull-up","Ein Satz Pull-ups ohne Unterstützung",st.anyUnassisted(["pu_breit","pu_eng"])?1:0,1);
+  [[15,7.5],[35,20]].forEach(function(t){
+    var tg=G(t[0],t[1]);
+    once("ÜBUNGS-MEILENSTEINE","🧗","Pull-ups +"+tg+" kg","Pull-ups mit "+tg+" kg Zusatzgewicht",st.maxExW(["pu_breit","pu_eng"]),tg);
+  });
+  once("ÜBUNGS-MEILENSTEINE","⛓️","Erste Dips","Ein Satz Dips ohne Unterstützung",st.anyUnassisted(["dips"])?1:0,1);
+  [[25,12.5],[50,30]].forEach(function(t){
+    var tg=G(t[0],t[1]);
+    once("ÜBUNGS-MEILENSTEINE","⛓️","Dips +"+tg+" kg","Dips mit "+tg+" kg Zusatzgewicht",st.maxExW(["dips"]),tg);
+  });
+  /* Spezial */
+  counter("SPEZIAL","🗓️","Volle Woche","Push, Pull & Legs in derselben Woche (zählt Wochen)",st.fullWeeks);
+  counter("SPEZIAL","⚔️","Wochenend-Krieger","Samstag & Sonntag am selben Wochenende trainiert",st.weekends);
+  counter("SPEZIAL","✅","Komplettes Programm","Alle Übungen eines Trainingstags an einem Tag geloggt",st.completeDays);
+  once("SPEZIAL","🌅","Frühschicht","Einen Satz vor 8:00 Uhr geloggt",st.early?1:0,1);
+  once("SPEZIAL","🌙","Nachtschicht","Einen Satz nach 21:00 Uhr geloggt",st.late?1:0,1);
+  return A;
+}
+function achKey(a){ return a.sec+"|"+a.name; }
+
+function checkAchievements(notify){
+  updateLeaguePeak();
+  var st=computeStats();
+  var A=buildAchievements(st);
+  S.achSeen=S.achSeen||{};
+  var newly=[];
+  A.forEach(function(a){
+    var n = a.type==="counter" ? a.n : (a.val>=a.target?1:0);
+    var seen = S.achSeen[achKey(a)]||0;
+    if(n>seen){
+      if(seen===0 || a.type==="counter") newly.push(a.name+(a.type==="counter"&&n>1?" ×"+n:""));
+      S.achSeen[achKey(a)]=n;
+    }
+  });
+  save();
+  if(notify && newly.length){
+    setTimeout(function(){
+      toast("🏅 "+(newly.length===1 ? newly[0] : newly.length+" neue Erfolge!"));
+    }, 1900);
+  }
+}
+
+function renderAchievements(){
+  var st=computeStats();
+  var A=buildAchievements(st);
+  var wrap=document.getElementById("achList"); wrap.innerHTML="";
+  var unlocked=A.filter(function(a){ return a.type==="counter"?a.n>0:a.val>=a.target; }).length;
+  var head=document.createElement("p");
+  head.className="note"; head.style.marginBottom="12px";
+  head.textContent=unlocked+" von "+A.length+" Erfolgen freigeschaltet"+(S.profile?"":" · Gewichtsziele zeigen Männer-Werte, bis ein Profil angelegt ist");
+  wrap.appendChild(head);
+  var lastSec=null;
+  A.forEach(function(a){
+    if(a.sec!==lastSec){
+      var h=document.createElement("div"); h.className="ach-sec"; h.textContent=a.sec;
+      wrap.appendChild(h); lastSec=a.sec;
+    }
+    var done = a.type==="counter" ? a.n>0 : a.val>=a.target;
+    var card=document.createElement("div");
+    card.className="ach-card"+(done?"":" locked");
+    var badge, prog="";
+    if(a.type==="counter"){
+      badge = a.n>0 ? '<span class="ach-badge count">×'+a.n+'</span>' : '<span class="ach-badge pct">–</span>';
+    } else if(done){
+      badge = '<span class="ach-badge done">✓</span>';
+    } else {
+      var p=Math.min(100,Math.round(a.val/a.target*100));
+      badge='<span class="ach-badge pct">'+p+'%</span>';
+      prog='<div class="ach-prog"><span style="width:'+p+'%"></span></div>';
+    }
+    card.innerHTML='<div class="ach-ico">'+a.ico+'</div>'+
+      '<div class="ach-main"><div class="ach-name">'+a.name+'</div>'+
+      '<div class="ach-desc">'+a.desc+'</div>'+prog+'</div>'+badge;
+    wrap.appendChild(card);
+  });
+}
+
 /* ---------- Rendering ---------- */
 var activeDay="push", activeTab="training";
 
@@ -488,7 +755,7 @@ function renderHud(){
   document.getElementById("xpInto").textContent=lv.into;
   document.getElementById("xpNeed").textContent=lv.need;
   document.getElementById("xpBar").style.width=Math.round(lv.into/lv.need*100)+"%";
-  document.getElementById("streakVal").textContent=S.streak;
+  document.getElementById("streakVal").textContent=computeStats().weekStreak;
   var c=2*Math.PI*30;
   document.getElementById("ringFill").setAttribute("stroke-dasharray",(c*lv.into/lv.need)+" "+c);
 }
@@ -528,7 +795,7 @@ function renderExList(){
           '</div>';
       }).join("");
       body = toggle+
-        '<div class="set-lbls"><span class="sp-idx"></span><span>'+(ex.bw===1?'± KG':'KG')+'</span><span>WDH</span><span class="sp-del"></span></div>'+
+        '<div class="set-lbls"><span class="sp-idx"></span><span>'+(ex.bw===1?'± KG':(ex.perSide?'KG / SEITE':'KG'))+'</span><span>WDH</span><span class="sp-del"></span></div>'+
         rows+
         '<div class="set-actions"><button class="add-set">＋ Satz</button><button class="log-all">Loggen ✓</button></div>';
     }
@@ -793,6 +1060,7 @@ function renderAll(){
   if(activeTab==="training"){ renderExList(); renderHistory(); renderToday(); }
   if(activeTab==="progress"){ renderCharts(); }
   if(activeTab==="leagues"){ renderLeagues(); }
+  if(activeTab==="ach"){ renderAchievements(); }
   if(activeTab==="profile"){ renderProfile(); }
 }
 
