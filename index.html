@@ -25,6 +25,13 @@
   h2{font-family:var(--mono);font-size:11px;letter-spacing:.22em;color:var(--text-dim);margin:0 0 10px 2px;font-weight:600;}
   .card{background:var(--bg-elev);border:1px solid var(--border);border-radius:var(--radius);padding:14px;}
 
+  /* App-Logo */
+  .applogo{display:flex;align-items:center;justify-content:center;gap:7px;margin:0 0 -6px;}
+  .applogo .lg-mark{font-size:13px;color:var(--gold);line-height:1;transform:translateY(-1px);}
+  .applogo .lg-text{font-family:var(--mono);font-size:12px;letter-spacing:.3em;font-weight:700;color:var(--text-dim);}
+  .applogo .lg-dot{color:var(--gold);}
+  body.themed .applogo .lg-mark,body.themed .applogo .lg-dot{color:var(--accent);}
+
   /* HUD */
   .hud{display:flex;align-items:center;gap:14px;background:linear-gradient(160deg,var(--bg-elev),var(--bg-elev2));border:1px solid var(--border);border-radius:var(--radius);padding:14px;}
   .ring-wrap{position:relative;width:72px;height:72px;flex:none;}
@@ -36,6 +43,7 @@
   .ring-level .lbl{font-size:8px;letter-spacing:.12em;color:var(--text-dim);margin-top:2px;}
   .hud-info{flex:1;min-width:0;}
   .hud-title{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--text-dim);margin-bottom:3px;}
+  .hud-title.named{font-family:var(--sans);font-size:15px;letter-spacing:0;font-weight:700;color:var(--text);margin-bottom:1px;}
   .xp-line{font-family:var(--mono);font-size:12.5px;margin-bottom:7px;}
   .xp-line b{color:var(--gold);}
   .xp-bar-track{height:6px;border-radius:4px;background:var(--bg-elev2);overflow:hidden;}
@@ -65,6 +73,7 @@
   .set-lbls span{font-family:var(--mono);font-size:9px;letter-spacing:.08em;color:var(--text-dim);flex:1;text-align:center;}
   .set-lbls .sp-idx{width:16px;flex:none;}
   .set-lbls .sp-del{width:34px;flex:none;}
+  .run-pace{font-family:var(--mono);font-size:12.5px;color:var(--text-dim);margin:4px 0 2px;text-align:center;}
   .set-actions{display:flex;gap:8px;margin-top:6px;}
   .add-set{flex:1;background:var(--bg);border:1px dashed var(--border);border-radius:9px;color:var(--text-dim);font-size:12px;padding:10px 0;font-family:var(--mono);}
   .log-all{flex:1;background:var(--teal);border:none;border-radius:9px;color:#12141a;font-weight:700;font-size:13px;padding:10px 0;}
@@ -261,6 +270,8 @@
 <body>
 <div class="app">
 
+  <div class="applogo"><span class="lg-mark">▚</span><span class="lg-text">GYM<span class="lg-dot">.</span>LOG</span></div>
+
   <header class="hud">
     <div class="ring-wrap">
       <svg width="72" height="72" viewBox="0 0 72 72">
@@ -270,7 +281,7 @@
       <div class="ring-level"><div class="num" id="levelNum">1</div><div class="lbl">LVL</div></div>
     </div>
     <div class="hud-info">
-      <div class="hud-title">GYM.LOG</div>
+      <div class="hud-title" id="hudName">GYM.LOG</div>
       <button class="hud-titlebtn" id="titleBtn"><span id="hudTitle">Titel wählen</span><span class="tb-chev">›</span></button>
       <div class="xp-line"><b id="xpInto">0</b> / <span id="xpNeed">100</span> XP</div>
       <div class="xp-bar-track"><div class="xp-bar-fill" id="xpBar" style="width:0%"></div></div>
@@ -288,6 +299,7 @@
       <button data-day="push" class="active">Push</button>
       <button data-day="pull">Pull</button>
       <button data-day="legs">Legs</button>
+      <button data-day="run">Lauf</button>
     </div>
     <div id="exList"></div>
     <section>
@@ -309,10 +321,16 @@
         <select id="exSelect"></select>
         <div id="exChart"></div>
       </div>
+      <div class="chart-box">
+        <div class="chart-title">LAUFDISTANZ PRO EINHEIT (KM)</div>
+        <div id="runDistChart"></div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-title">PACE-ENTWICKLUNG (MIN/KM, NIEDRIGER = SCHNELLER)</div>
+        <div id="runPaceChart"></div>
+      </div>
     </section>
   </div>
-
-  <!-- LIGEN -->
   <div class="tab" id="tab-leagues">
     <section>
       <div class="h2row"><h2>LIGEN PRO MUSKELGRUPPE</h2><button class="info-btn" id="leagueInfoBtn" aria-label="Info">ⓘ</button></div>
@@ -334,6 +352,7 @@
       <h2>PROFIL</h2>
       <div class="card">
         <div class="prof-grid">
+          <div class="field wide"><label>NAME</label><input id="pName" type="text" placeholder="Wie sollen wir dich nennen?" maxlength="24"></div>
           <div class="field"><label>GESCHLECHT</label>
             <select id="pGender"><option value="m">Männlich</option><option value="w">Weiblich</option></select>
           </div>
@@ -407,10 +426,16 @@ var EX = [
 ];
 function exById(id){ for(var i=0;i<EX.length;i++) if(EX[i].id===id) return EX[i]; return null; }
 
-var GROUPS = ["Brust","Rücken","Schultern","Arme","Beine","Bauch"];
-var GROUP_COLORS = {"Brust":"var(--teal)","Rücken":"var(--gold)","Schultern":"var(--lav)","Arme":"var(--blue)","Beine":"var(--rust)","Bauch":"#7fae6e"};
+var GROUPS = ["Brust","Rücken","Schultern","Arme","Beine","Bauch","Ausdauer"];
+var GROUP_COLORS = {"Brust":"var(--teal)","Rücken":"var(--gold)","Schultern":"var(--lav)","Arme":"var(--blue)","Beine":"var(--rust)","Bauch":"#7fae6e","Ausdauer":"#e07fb0"};
 /* Geschlechtsfaktor: weibliche Standards relativ zu männlichen */
-var GENDER_F = {"Brust":0.58,"Rücken":0.60,"Schultern":0.58,"Arme":0.58,"Beine":0.72,"Bauch":0.65};
+var GENDER_F = {"Brust":0.58,"Rücken":0.60,"Schultern":0.58,"Arme":0.58,"Beine":0.72,"Bauch":0.65,"Ausdauer":1};
+/* Lauf: Pace-Grenzen (Sek/km) für die Liga-Schwellen 0.55/0.80/1.20/1.60/2.00 */
+var RUN_ANCHORS = {
+  m:[490,405,315,280,255],   /* 8:10 · 6:45 · 5:15 · 4:40 · 4:15 – Ø 6:00 = Score 1,00 */
+  w:[565,470,360,325,295]    /* 9:25 · 7:50 · 6:00 · 5:25 · 4:55 – Ø 6:55 = Score 1,00 */
+};
+var RUN_SCORES=[0.55,0.80,1.20,1.60,2.00];
 
 var LEAGUES = [
   {name:"Bronze",  max:0.55, color:"#b0764a", icon:"🥉"},
@@ -535,6 +560,53 @@ function addEntry(exId){
   toast("+"+xp+" XP · "+rows.length+" Sätze · "+fmt(volume)+" kg");
 }
 
+function addRun(){
+  var km=parseFloat(String(document.getElementById("runKm").value).replace(",","."));
+  var mi=parseInt(document.getElementById("runMin").value,10);
+  var se=parseInt(document.getElementById("runSec").value,10);
+  if(isNaN(mi)) mi=0;
+  if(isNaN(se)) se=0;
+  var secs=mi*60+se;
+  if(isNaN(km)||km<=0){ toast("Distanz angeben"); return; }
+  if(secs<=0){ toast("Zeit angeben"); return; }
+  var pace=secs/km;
+  if(pace<130){ toast("Das wäre Weltrekord-Tempo – bitte prüfen"); return; }
+  var xp = Math.round(km*12) + (pace<G(360,415) ? Math.round(km*4) : 0);
+
+  S.totalXP += xp;
+  var d=today();
+  if(S.lastLogDate!==d){
+    S.streak=(S.lastLogDate && isYesterday(S.lastLogDate,d))?S.streak+1:1;
+    S.lastLogDate=d;
+  }
+  S.entries.push({id:Date.now()+"_"+Math.random().toString(36).slice(2,6), ex:"run", date:d, ts:Date.now(),
+                  km:km, secs:secs, pace:pace, vol:0, xp:xp});
+  S.lastRun={km:km, min:mi, sec:se};
+  save();
+  checkAchievements(true);
+  renderAll();
+  toast("+"+xp+" XP · "+km.toFixed(2).replace(".",",")+" km · "+paceStr(pace));
+}
+function paceStr(p){
+  var m=Math.floor(p/60), s=Math.round(p%60);
+  if(s===60){ m++; s=0; }
+  return m+":"+(s<10?"0":"")+s+" /km";
+}
+function runScore(pace, age, gender){
+  var a=RUN_ANCHORS[gender==="w"?"w":"m"].slice();
+  var af=1+Math.max(0,(age||30)-35)*0.01;
+  a=a.map(function(x){ return x*af; });
+  if(pace>=a[0]) return RUN_SCORES[0]*(a[0]/pace);
+  if(pace<=a[4]) return RUN_SCORES[4]*(a[4]/pace);
+  for(var i=0;i<4;i++){
+    if(pace<=a[i] && pace>=a[i+1]){
+      var f=(a[i]-pace)/(a[i]-a[i+1]);
+      return RUN_SCORES[i]+f*(RUN_SCORES[i+1]-RUN_SCORES[i]);
+    }
+  }
+  return 1;
+}
+
 function deleteEntry(id){
   for(var i=S.entries.length-1;i>=0;i--){
     if(S.entries[i].id===id){
@@ -591,6 +663,7 @@ function groupScores(){
   });
   var res={};
   GROUPS.forEach(function(g){
+    if(g==="Ausdauer") return;
     var sc=null;
     EX.forEach(function(ex){
       if(ex.group!==g || !best[ex.id]) return;
@@ -601,6 +674,13 @@ function groupScores(){
     });
     res[g]=sc;
   });
+  /* Ausdauer: beste Pace über mindestens 3 km (letzte 90 Tage) */
+  var bp=null;
+  S.entries.forEach(function(e){
+    if(e.ex!=="run" || e.ts<cutoff || e.km<3) return;
+    if(bp===null||e.pace<bp) bp=e.pace;
+  });
+  res["Ausdauer"] = bp===null ? null : runScore(bp, p.age, p.gender);
   return res;
 }
 function leagueFor(score){
@@ -645,6 +725,36 @@ function computeStats(){
     (st.dayExs[e.date]=st.dayExs[e.date]||{})[e.ex]=1;
   });
   st.workoutDays=Object.keys(st.dates).length;
+  /* letzte Aktivität je Kategorie (für den Liga-Verfall) */
+  st.lastGroupTs={};
+  S.entries.forEach(function(e){
+    var g = e.ex==="run" ? "Ausdauer" : (exById(e.ex)||{}).group;
+    if(!g) return;
+    if(!st.lastGroupTs[g] || e.ts>st.lastGroupTs[g]) st.lastGroupTs[g]=e.ts;
+  });
+  /* --- Lauf-Statistiken --- */
+  st.totalKm=0; st.maxKm=0; st.runCount=0; st.bestPace=null; st.bestPaceRecent=null;
+  st.runDist={};
+  var rcut=Date.now()-90*86400000;
+  S.entries.forEach(function(e){
+    if(e.ex!=="run") return;
+    st.runCount++;
+    st.totalKm+=e.km;
+    if(e.km>st.maxKm) st.maxKm=e.km;
+    if(e.km>=3){
+      if(st.bestPace===null||e.pace<st.bestPace) st.bestPace=e.pace;
+      if(e.ts>=rcut && (st.bestPaceRecent===null||e.pace<st.bestPaceRecent)) st.bestPaceRecent=e.pace;
+    }
+  });
+  st.paceUnder=function(sec){
+    /* schnellste Pace über mindestens 3 km */
+    return st.bestPace!==null && st.bestPace<sec;
+  };
+  st.fastFive=function(sec){
+    var ok=false;
+    S.entries.forEach(function(e){ if(e.ex==="run" && e.km>=5 && e.secs<sec) ok=true; });
+    return ok;
+  };
 
   /* Wochen-Streak: aktuelle Woche zählt, sobald trainiert; sonst ab letzter Woche */
   var cw=weekStart(today());
@@ -725,6 +835,20 @@ function computeStats(){
     if(run3>max3) max3=run3;
   }
   st.streak3x=max3;
+  /* Utopische Gewichte: geschätztes Maximum über dem 3-fachen Durchschnitt */
+  st.absurdExCount=0;
+  if(S.profile){
+    var pf=S.profile, afx=ageFactor(pf.age);
+    var seen={};
+    S.entries.forEach(function(e){
+      if(e.ex==="run" || seen[e.ex]) return;
+      var ex=exById(e.ex); if(!ex || !ex.bench) return;
+      var gf = pf.gender==="w" ? (ex.genderF || GENDER_F[ex.group] || 1) : 1;
+      var benchmark = ex.bench * pf.weight * gf * afx;
+      var mx=0; (e.setList||[]).forEach(function(sx){ var v=est1RM(sx.eff,sx.reps); if(v>mx) mx=v; });
+      if(benchmark>0 && mx > benchmark*3){ seen[e.ex]=1; st.absurdExCount++; }
+    });
+  }
   st.bestLeague=function(){
     var b=-1; GROUPS.forEach(function(g){ if(st.peak(g)>b) b=st.peak(g); }); return b;
   };
@@ -761,6 +885,7 @@ function computeStats(){
   (function(){
     var cnt={};
     S.entries.forEach(function(e){
+      if(e.ex==="run") return;   /* mehrere Läufe am Tag sind legitim */
       var k=e.date+"|"+e.ex;
       cnt[k]=(cnt[k]||0)+1;
       if(cnt[k]>st.maxSameExPerDay) st.maxSameExPerDay=cnt[k];
@@ -819,8 +944,19 @@ function computeStats(){
 }
 
 function updateLeaguePeak(){
-  var sc=groupScores(); if(!sc) return [];
   S.leaguePeak=S.leaguePeak||{};
+  /* Verfall: 6 Monate ohne Eintrag in einer Kategorie setzt deren Liga zurück */
+  var decayCut=Date.now()-180*86400000, lastTs={};
+  S.entries.forEach(function(e){
+    var g = e.ex==="run" ? "Ausdauer" : (exById(e.ex)||{}).group;
+    if(!g) return;
+    if(!lastTs[g] || e.ts>lastTs[g]) lastTs[g]=e.ts;
+  });
+  GROUPS.forEach(function(g){
+    if(S.leaguePeak[g]!==undefined && (!lastTs[g] || lastTs[g]<decayCut)) delete S.leaguePeak[g];
+  });
+
+  var sc=groupScores(); if(!sc) return [];
   var proms=[];
   GROUPS.forEach(function(g){
     if(sc[g]===null) return;
@@ -852,11 +988,10 @@ function buildAchievements(st){
     var min=G(t[2],t[3]);
     counter("TAGESVOLUMEN",t[1],"Tagespensum "+t[0],"≥ "+kg(min)+" an einem Tag bewegt (zählt Tage)",st.countVolDays(min));
   });
-  /* Gesamtvolumen */
-  [["100-Tonnen-Club",100000,60000],["500-Tonnen-Club",500000,300000],["Millionen-Club",1000000,600000],["Legende: 5.000 Tonnen",5000000,3000000]]
+  /* Gesamtvolumen – geschlechtsneutral: ein Kilogramm ist ein Kilogramm */
+  [["100-Tonnen-Club",100000],["500-Tonnen-Club",500000],["Millionen-Club",1000000],["Legende: 5.000 Tonnen",5000000]]
   .forEach(function(t){
-    var tg=G(t[1],t[2]);
-    once("GESAMTVOLUMEN","🏗️",t[0],"Insgesamt "+kg(tg)+" bewegt",st.totalVol,tg);
+    once("GESAMTVOLUMEN","🏗️",t[0],"Insgesamt "+kg(t[1])+" bewegt",st.totalVol,t[1]);
   });
   /* Wochen-Streaks */
   [[4,"Ein Monat dran"],[8,"Zwei Monate dran"],[12,"Quartal komplett"],[26,"Halbes Jahr durchgezogen"],[52,"Ein ganzes Jahr!"]]
@@ -879,7 +1014,7 @@ function buildAchievements(st){
   });
   (function(){
     var n=0; GROUPS.forEach(function(g){ if(st.peak(g)>=2) n++; });
-    once("LIGEN","🌟","Allrounder","Alle 6 Muskelgruppen mindestens in Gold",n,6);
+    once("LIGEN","🌟","Allrounder","Alle Kategorien mindestens in Gold",n,GROUPS.length);
   })();
   /* Übungs-Meilensteine */
   function mile(ico,label,ids,mArr,wArr,unit){
@@ -908,6 +1043,23 @@ function buildAchievements(st){
   counter("SPEZIAL","✅","Komplettes Programm","Alle Übungen eines Trainingstags an einem Tag geloggt",st.completeDays);
   once("SPEZIAL","🌅","Frühschicht","Einen Satz vor 8:00 Uhr geloggt",st.early?1:0,1);
   once("SPEZIAL","🌙","Nachtschicht","Einen Satz nach 21:00 Uhr geloggt",st.late?1:0,1);
+  /* --- LAUFEN --- */
+  [["5 km am Stück","🥉",5],["10 km am Stück","🥈",10],["Halbmarathon","🥇",21.1],["Marathon","💠",42.2]]
+  .forEach(function(t){
+    counter("LAUF-DISTANZ",t[1],t[0],"Ein Lauf über mindestens "+String(t[2]).replace(".",",")+" km (zählt Läufe)",
+      (function(){ var c=0; S.entries.forEach(function(e){ if(e.ex==="run"&&e.km>=t[2]) c++; }); return c; })());
+  });
+  [100,500,1000,5000].forEach(function(d){
+    once("GESAMTSTRECKE","🛣️",fmt(d)+" km gelaufen","Insgesamt "+fmt(d)+" km zurückgelegt",st.totalKm,d);
+  });
+  [[420,480],[360,420],[300,345],[270,315]].forEach(function(t){
+    var tg=G(t[0],t[1]);
+    once("TEMPO","⚡","Unter "+paceStr(tg).replace(" /km",""),"Beste Pace über 3 km schneller als "+paceStr(tg),
+      st.bestPace!==null?(tg*2-st.bestPace):0, tg);
+  });
+  [10,50].forEach(function(n){
+    once("LAUF-KONSTANZ","👟",n+" Läufe","Insgesamt "+n+" Laufeinheiten geloggt",st.runCount,n);
+  });
   return A;
 }
 function achKey(a){ return a.sec+"|"+a.name; }
@@ -925,41 +1077,52 @@ var RARITY = {
 var TITLES = [
   /* SELTEN */
   {id:"beharrlich", r:"selten", m:"Der Beharrliche",     w:"Die Beharrliche",     d:function(){return "12 Wochen in Folge trainiert";}, f:function(st){return st.maxWeekStreak>=12;}},
-  {id:"eisen",      r:"selten", m:"Eisenträger",         w:"Eisenträgerin",       d:function(){return "Insgesamt "+kg(G(250000,150000))+" bewegt";}, f:function(st){return st.totalVol>=G(250000,150000);}},
+  {id:"eisen",      r:"selten", m:"Eisenträger",         w:"Eisenträgerin",       d:function(){return "Insgesamt "+kg(250000)+" bewegt";}, f:function(st){return st.totalVol>=250000;}},
   {id:"vollstaend", r:"selten", m:"Der Vollständige",    w:"Die Vollständige",    d:function(){return "10× ein Trainingsprogramm vollständig geloggt";}, f:function(st){return st.completeDays>=10;}},
   {id:"vertikal",   r:"selten", m:"Vertikal Erhoben",    w:"Vertikal Erhoben",    d:function(){return "Pull-ups mit "+G(20,10)+" kg Zusatzgewicht";}, f:function(st){return st.maxExW(["pu_breit","pu_eng"])>=G(20,10);}},
-  {id:"ausgewogen", r:"selten", m:"Der Ausgewogene",     w:"Die Ausgewogene",     d:function(){return "Alle 6 Muskelgruppen mindestens in Gold";}, f:function(st){return st.groupsAtLeast(2)>=6;}},
   {id:"schwerkraft",r:"selten", m:"Schwerkraftverächter",w:"Schwerkraftverächterin",d:function(){return "Dips mit "+G(40,20)+" kg Zusatzgewicht";}, f:function(st){return st.maxExW(["dips"])>=G(40,20);}},
+  {id:"schwaechste",r:"selten", m:"Die schwächste Waffe der Menschheit", w:"Die schwächste Waffe der Menschheit", d:function(){return "Alle Kategorien mindestens in Bronze";}, f:function(st){return st.groupsAtLeast(0)>=GROUPS.length;}},
+  {id:"spieler",    r:"selten", m:"Der Spieler",         w:"Die Spielerin",       d:function(){return "Alle Kategorien mindestens in Silber";}, f:function(st){return st.groupsAtLeast(1)>=GROUPS.length;}},
+  {id:"ausdauernd", r:"selten", m:"Der Ausdauernde",    w:"Die Ausdauernde",     d:function(){return "Insgesamt 100 km gelaufen";}, f:function(st){return st.totalKm>=100;}},
+  {id:"zehnkm",     r:"selten", m:"Zehnkilometerläufer",w:"Zehnkilometerläuferin",d:function(){return "Einmal 10 km am Stück gelaufen";}, f:function(st){return st.maxKm>=10;}},
   /* EPISCH */
-  {id:"tonnenschwer",r:"episch",m:"Der Tonnenschwere",   w:"Die Tonnenschwere",   d:function(){return "Insgesamt "+kg(G(1000000,600000))+" bewegt";}, f:function(st){return st.totalVol>=G(1000000,600000);}},
+  {id:"tonnenschwer",r:"episch",m:"Der Tonnenschwere",   w:"Die Tonnenschwere",   d:function(){return "Insgesamt "+kg(1000000)+" bewegt";}, f:function(st){return st.totalVol>=1000000;}},
   {id:"unbeugsam",  r:"episch", m:"Der Unbeugsame",      w:"Die Unbeugsame",      d:function(){return "26 Wochen in Folge trainiert";}, f:function(st){return st.maxWeekStreak>=26;}},
   {id:"diamant",    r:"episch", m:"Diamantschmied",      w:"Diamantschmiedin",    d:function(){return "Diamant-Liga in einer Muskelgruppe";}, f:function(st){return st.bestLeague()>=4;}},
   {id:"hundertfach",r:"episch", m:"Der Hundertfache",    w:"Die Hundertfache",    d:function(){return "An 100 Tagen trainiert";}, f:function(st){return st.workoutDays>=100;}},
   {id:"zweilasten", r:"episch", m:"Träger zweier Lasten",w:"Trägerin zweier Lasten",d:function(){return "An einem Tag "+kg(G(25000,15000))+" bewegt";}, f:function(st){return st.maxDayVol>=G(25000,15000);}},
   {id:"rastlos",    r:"episch", m:"Der Rastlose",        w:"Die Rastlose",        d:function(){return "8 Wochen in Folge mindestens 3× pro Woche trainiert";}, f:function(st){return st.streak3x>=8;}},
   {id:"unsterbl",   r:"episch", m:"Der Unsterbliche",    w:"Die Unsterbliche",    d:function(){return "14 Tage am Stück ohne Pause trainiert";}, f:function(st){return st.maxDayStreak>=14;}},
+  {id:"bestaendig", r:"episch", m:"Der Beständige",      w:"Die Beständige",      d:function(){return "Insgesamt 500 km gelaufen";}, f:function(st){return st.totalKm>=500;}},
+  {id:"halbdist",   r:"episch", m:"Halbdistanzler",      w:"Halbdistanzlerin",    d:function(){return "Einmal 21,1 km am Stück gelaufen";}, f:function(st){return st.maxKm>=21.1;}},
+  {id:"schattenjg", r:"episch", m:"Der Schattenjäger",   w:"Die Schattenjägerin", d:function(){return "Alle Kategorien mindestens in Gold";}, f:function(st){return st.groupsAtLeast(2)>=GROUPS.length;}},
   /* MYTHISCH */
   {id:"herrscher",  r:"mythisch",m:"Herrscher der Schwerkraft",w:"Herrscherin der Schwerkraft",d:function(){return "Meister-Liga in einer Muskelgruppe";}, f:function(st){return st.bestLeague()>=5;}},
   {id:"ewig",       r:"mythisch",m:"Der Ewige",          w:"Die Ewige",           d:function(){return "52 Wochen in Folge trainiert";}, f:function(st){return st.maxWeekStreak>=52;}},
-  {id:"titan",      r:"mythisch",m:"Titan",              w:"Titanin",             d:function(){return "Insgesamt "+kg(G(5000000,3000000))+" bewegt";}, f:function(st){return st.totalVol>=G(5000000,3000000);}},
-  {id:"schattenf",  r:"mythisch",m:"Schattenfürst",      w:"Schattenfürstin",     d:function(){return "Alle 6 Muskelgruppen mindestens in Platin";}, f:function(st){return st.groupsAtLeast(3)>=6;}},
+  {id:"titan",      r:"mythisch",m:"Titan",              w:"Titanin",             d:function(){return "Insgesamt "+kg(5000000)+" bewegt";}, f:function(st){return st.totalVol>=5000000;}},
   {id:"unermuedl",  r:"mythisch",m:"Der Unermüdliche",   w:"Die Unermüdliche",    d:function(){return "An 250 Tagen trainiert";}, f:function(st){return st.workoutDays>=250;}},
   {id:"erwacht",    r:"mythisch",m:"Der Erwachte",       w:"Die Erwachte",        d:function(){return "Level 25 erreicht";}, f:function(st){return st.level>=25;}},
+  {id:"distanzfr",  r:"mythisch",m:"Distanzfresser",     w:"Distanzfresserin",    d:function(){return "Insgesamt 1.000 km gelaufen";}, f:function(st){return st.totalKm>=1000;}},
+  {id:"marathon",   r:"mythisch",m:"Der Marathonier",    w:"Die Marathonierin",   d:function(){return "Einmal 42,2 km am Stück gelaufen";}, f:function(st){return st.maxKm>=42.2;}},
+  {id:"schattenwd", r:"mythisch",m:"Der Schattenwandler",w:"Die Schattenwandlerin",d:function(){return "Alle Kategorien mindestens in Platin";}, f:function(st){return st.groupsAtLeast(3)>=GROUPS.length;}},
   /* LEGENDÄR */
   {id:"koloss",     r:"legendaer",m:"Kolossbrecher",     w:"Kolossbrecherin",     d:function(){return "Ein einzelner Satz mit über "+G(300,180)+" kg Gesamtlast";}, f:function(st){return st.maxSetLoad>=G(300,180);}},
   {id:"nachtw",     r:"legendaer",m:"Nachtwandler",      w:"Nachtwandlerin",      d:function(){return "An 20 Tagen nach 21 Uhr trainiert";}, f:function(st){return st.lateDays>=20;}},
   {id:"fruehauf",   r:"legendaer",m:"Der Frühaufsteher", w:"Die Frühaufsteherin", d:function(){return "An 20 Tagen vor 8 Uhr trainiert";}, f:function(st){return st.earlyDays>=20;}},
   {id:"zweisonnen", r:"legendaer",m:"Wandler zweier Sonnen",w:"Wandlerin zweier Sonnen",d:function(){return "Push, Pull und Legs vollständig an einem Tag";}, f:function(st){return st.tripleDay;}},
   {id:"unmoeglich", r:"legendaer",m:"Der Unmögliche",    w:"Die Unmögliche",      d:function(){return "An einem Tag "+kg(G(10000,6000))+" nur mit Bauchübungen bewegt";}, f:function(st){return st.absOnlyDayVol>=G(10000,6000);}},
+  {id:"windbrecher",r:"legendaer",m:"Windbrecher",       w:"Windbrecherin",       d:function(){return "5 km unter "+Math.floor(G(1200,1380)/60)+":00 gelaufen";}, f:function(st){return st.fastFive(G(1200,1380));}},
+  {id:"schattenf",   r:"legendaer",m:"Schattenfürst",     w:"Schattenfürstin",     d:function(){return "Alle Kategorien mindestens in Diamant";}, f:function(st){return st.groupsAtLeast(4)>=GROUPS.length;}},
   {id:"namenlos",   r:"legendaer",m:"Der Namenlose",     w:"Die Namenlose",       d:function(){return "Alle anderen Titel gesammelt";}, f:function(){return false;}},
   /* SONDERSTUFE */
-  {id:"monarch",    r:"sonder",  m:"Schattenmonarch",    w:"Schattenmonarchin",   d:function(){return "Alle 6 Muskelgruppen in der Meister-Liga";}, f:function(st){return st.groupsAtLeast(5)>=6;}},
+  {id:"monarch",    r:"sonder",  m:"Schattenmonarch",    w:"Schattenmonarchin",   d:function(){return "Alle Kategorien in der Meister-Liga";}, f:function(st){return st.groupsAtLeast(5)>=GROUPS.length;}},
   /* BERÜCHTIGT (versteckt bis freigeschaltet) */
   {id:"verschollen",r:"beruecht",m:"Der Verschollene",   w:"Die Verschollene",    d:function(){return "8 Wochen am Stück nichts geloggt";}, f:function(st){return st.maxGapWeeks>=8;}},
   {id:"staub",      r:"beruecht",m:"Staubfänger",        w:"Staubfängerin",       d:function(){return "Nach über 12 Wochen Pause zurückgekehrt";}, f:function(st){return st.returnedAfterWeeks>=12;}},
   {id:"fabulier",   r:"beruecht",m:"Der Fabulierer",     w:"Die Fabuliererin",    d:function(){return "Level künstlich aufgebläht – dieselbe Übung 3× an einem Tag oder mehr als 3 volle Programme";}, f:function(st){return st.maxProgramsPerDay>3 || st.maxSameExPerDay>=3;}},
   {id:"zahlendreh", r:"beruecht",m:"Zahlendreher",       w:"Zahlendreherin",      d:function(){return "Ein Satz weit über dem Bestwert – und nie wieder in die Nähe gekommen";}, f:function(st){return st.outlier;}},
-  {id:"halbherzig", r:"beruecht",m:"Der Halbherzige",    w:"Die Halbherzige",     d:function(){return "5× ein Workout abgeschlossen, ohne alle Übungen zu loggen";}, f:function(st){return st.unfinishedDays>=5;}}
+  {id:"halbherzig", r:"beruecht",m:"Der Halbherzige",    w:"Die Halbherzige",     d:function(){return "5× ein Workout abgeschlossen, ohne alle Übungen zu loggen";}, f:function(st){return st.unfinishedDays>=5;}},
+  {id:"aufschneid", r:"beruecht",m:"Der Aufschneider",   w:"Die Aufschneiderin",  d:function(){return "Bei 3 verschiedenen Übungen Gewichte weit jenseits des Menschenmöglichen eingetragen";}, f:function(st){return st.absurdExCount>=3;}}
 ];
 function titleName(t){ return (S.profile&&S.profile.gender==="w")?t.w:t.m; }
 function titleById(id){ for(var i=0;i<TITLES.length;i++) if(TITLES[i].id===id) return TITLES[i]; return null; }
@@ -970,8 +1133,11 @@ function earnedTitles(st){
   TITLES.forEach(function(t){ if(t.r!=="beruecht" && t.id!=="namenlos") positives++; });
   TITLES.forEach(function(t){
     if(t.id==="namenlos") return;
-    if(t.f(st)){ out[t.id]=1; if(t.r!=="beruecht") n++; }
+    if(t.f(st)) out[t.id]=1;
   });
+  /* einmal verdient, bleibt verdient – auch wenn eine Liga später verfällt */
+  Object.keys(S.titlesSeen||{}).forEach(function(id){ if(titleById(id)) out[id]=1; });
+  TITLES.forEach(function(t){ if(t.r!=="beruecht" && t.id!=="namenlos" && out[t.id]) n++; });
   if(n>=positives) out["namenlos"]=1;
   return out;
 }
@@ -1072,6 +1238,12 @@ function showNextCelebration(){
 }
 
 function renderHudTitle(){
+  var nm=document.getElementById("hudName");
+  if(nm){
+    var n=(S.profile&&S.profile.name)?S.profile.name:"";
+    nm.textContent = n || "GYM.LOG";
+    nm.className = n ? "hud-title named" : "hud-title";
+  }
   var el=document.getElementById("hudTitle");
   var t=S.title?titleById(S.title):null;
   if(!t){
@@ -1163,6 +1335,13 @@ function openTitlePopup(){
 function renderAchievements(){
   var st=computeStats();
   var A=buildAchievements(st);
+  /* einmal erreicht, bleibt erreicht (z.B. wenn eine Liga verfällt) */
+  S.achSeen=S.achSeen||{};
+  A.forEach(function(a){
+    var seen=S.achSeen[achKey(a)]||0;
+    if(a.type==="counter"){ if(seen>a.n) a.n=seen; }
+    else if(seen>0 && a.val<a.target) a.val=a.target;
+  });
   var wrap=document.getElementById("achList"); wrap.innerHTML="";
   var unlocked=A.filter(function(a){ return a.type==="counter"?a.n>0:a.val>=a.target; }).length;
   var head=document.createElement("p");
@@ -1212,6 +1391,7 @@ function renderHud(){
 
 function renderExList(){
   var wrap=document.getElementById("exList"); wrap.innerHTML="";
+  if(activeDay==="run"){ renderRunCard(wrap); return; }
   EX.forEach(function(ex){
     if(ex.day!==activeDay) return;
     initExUI(ex.id);
@@ -1285,17 +1465,71 @@ function renderExList(){
   });
 }
 
+function renderRunCard(wrap){
+  var lr=S.lastRun||{};
+  var st=computeStats();
+  var card=document.createElement("div");
+  card.className="ex-card open";
+  card.innerHTML=
+    '<div class="ex-head" style="cursor:default;"><span class="ex-dot" style="background:'+GROUP_COLORS["Ausdauer"]+'"></span>'+
+    '<span class="ex-name">Laufeinheit</span>'+
+    '<span class="ex-last">'+(st.runCount?st.runCount+" Läufe · "+st.totalKm.toFixed(1).replace(".",",")+" km":"")+'</span></div>'+
+    '<div class="set-lbls"><span>DISTANZ (KM)</span><span>MIN</span><span>SEK</span></div>'+
+    '<div class="set-row">'+
+      '<input id="runKm" type="text" inputmode="decimal" value="'+(lr.km!==undefined?String(lr.km).replace(".",","):"")+'" placeholder="5,0">'+
+      '<input id="runMin" type="number" inputmode="numeric" value="'+(lr.min!==undefined?lr.min:"")+'" placeholder="30">'+
+      '<input id="runSec" type="number" inputmode="numeric" value="'+(lr.sec!==undefined?lr.sec:"")+'" placeholder="00">'+
+    '</div>'+
+    '<div class="run-pace" id="runPace">Pace: –</div>'+
+    '<div class="set-actions"><button class="log-all" id="runLog">Lauf speichern ✓</button></div>';
+  wrap.appendChild(card);
+
+  function upd(){
+    var km=parseFloat(String(document.getElementById("runKm").value).replace(",","."));
+    var mi=parseInt(document.getElementById("runMin").value,10)||0;
+    var se=parseInt(document.getElementById("runSec").value,10)||0;
+    var secs=mi*60+se;
+    var el=document.getElementById("runPace");
+    if(!isNaN(km)&&km>0&&secs>0){
+      var p=secs/km;
+      var extra="";
+      if(S.profile && km>=3){
+        var sc=runScore(p,S.profile.age,S.profile.gender);
+        extra=" · Liga-Score "+sc.toFixed(2).replace(".",",");
+      } else if(km<3){ extra=" · ab 3 km zählt es für die Liga"; }
+      el.textContent="Pace: "+paceStr(p)+extra;
+      el.style.color="var(--text)";
+    } else {
+      el.textContent="Pace: –"; el.style.color="var(--text-dim)";
+    }
+  }
+  ["runKm","runMin","runSec"].forEach(function(id){
+    document.getElementById(id).addEventListener("input", upd);
+  });
+  document.getElementById("runLog").addEventListener("click", addRun);
+  upd();
+}
+
 function renderHistory(){
   var list=document.getElementById("historyList"); list.innerHTML="";
   if(S.entries.length===0){
     list.innerHTML='<li class="empty" style="background:none;border:none;">Noch keine Einträge.</li>'; return;
   }
   S.entries.slice(-8).reverse().forEach(function(e){
-    var ex=exById(e.ex);
+    var li=document.createElement("li");
+    if(e.ex==="run"){
+      li.innerHTML='<span class="ex-dot" style="background:'+GROUP_COLORS["Ausdauer"]+'"></span>'+
+        '<span class="hname">Laufeinheit</span>'+
+        '<span class="hdet">'+String(e.km).replace(".",",")+' km · '+paceStr(e.pace)+'</span>'+
+        '<button class="hdel">×</button>';
+      li.querySelector(".hdel").addEventListener("click", function(){ deleteEntry(e.id); });
+      list.appendChild(li);
+      return;
+    }
+    var ex=exById(e.ex); if(!ex) return;
     var det = e.setList
       ? e.setList.map(function(s){ return s.w+"×"+s.reps; }).join(", ")
       : e.w+"kg × "+e.reps+" × "+e.sets;
-    var li=document.createElement("li");
     li.innerHTML='<span class="ex-dot" style="background:'+GROUP_COLORS[ex.group]+'"></span>'+
       '<span class="hname">'+ex.name+'</span>'+
       '<span class="hdet">'+det+' · '+fmt(e.vol)+'kg</span>'+
@@ -1349,7 +1583,7 @@ function renderLeagues(){
 }
 
 /* ---------- Charts (SVG) ---------- */
-function lineChart(points, color){
+function lineChart(points, color, isPace){
   var W=300, H=140, P=26;
   if(points.length===0) return '<p class="empty">Noch keine Daten.</p>';
   if(points.length===1) points=[points[0], points[0]];
@@ -1359,12 +1593,15 @@ function lineChart(points, color){
   var span=max-min;
   function X(i){ return P + i/(points.length-1)*(W-2*P); }
   function Y(v){ return H-P - (v-min)/span*(H-2*P); }
+  var topLbl = isPace ? paceStr(min*60).replace(" /km","") : fmt(max);
+  var topVal = isPace ? min : max;
+  var yTop = isPace ? Y(min) : Y(max);
   var path=points.map(function(p,i){ return (i===0?"M":"L")+X(i).toFixed(1)+" "+Y(p.y).toFixed(1); }).join(" ");
   var dots=points.map(function(p,i){ return '<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(p.y).toFixed(1)+'" r="3" fill="'+color+'"/>'; }).join("");
   var first=points[0].label||"", last=points[points.length-1].label||"";
   return '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;">'+
     '<line x1="'+P+'" y1="'+(H-P)+'" x2="'+(W-P)+'" y2="'+(H-P)+'" stroke="var(--border)"/>'+
-    '<text x="'+P+'" y="12" font-size="9" fill="#8c90a0" font-family="var(--mono)">'+fmt(max)+'</text>'+
+    '<text x="'+P+'" y="12" font-size="9" fill="#8c90a0" font-family="var(--mono)">'+topLbl+'</text>'+
     '<text x="'+P+'" y="'+(H-P+14)+'" font-size="9" fill="#8c90a0" font-family="var(--mono)">'+first+'</text>'+
     '<text x="'+(W-P)+'" y="'+(H-P+14)+'" font-size="9" fill="#8c90a0" text-anchor="end" font-family="var(--mono)">'+last+'</text>'+
     '<path d="'+path+'" fill="none" stroke="'+color+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>'+dots+'</svg>';
@@ -1394,6 +1631,19 @@ function renderCharts(){
   }
   if(current && haveData[current]) sel.value=current;
   renderExChart();
+  renderRunCharts();
+}
+function renderRunCharts(){
+  var runs=S.entries.filter(function(e){ return e.ex==="run"; }).slice(-15);
+  var dEl=document.getElementById("runDistChart"), pEl=document.getElementById("runPaceChart");
+  if(!dEl) return;
+  if(runs.length===0){
+    dEl.innerHTML='<p class="empty">Noch keine Läufe geloggt.</p>';
+    pEl.innerHTML='<p class="empty">Noch keine Läufe geloggt.</p>';
+    return;
+  }
+  dEl.innerHTML=lineChart(runs.map(function(e){ return {y:e.km, label:shortDate(e.date)}; }), "#e07fb0");
+  pEl.innerHTML=lineChart(runs.map(function(e){ return {y:e.pace/60, label:shortDate(e.date)}; }), "#7fd1c8", true);
 }
 function renderExChart(){
   var exId=document.getElementById("exSelect").value;
@@ -1414,18 +1664,20 @@ function renderExChart(){
 /* ---------- Profil / Daten ---------- */
 function renderProfile(){
   if(!S.profile) return;
+  document.getElementById("pName").value=S.profile.name||"";
   document.getElementById("pGender").value=S.profile.gender;
   document.getElementById("pAge").value=S.profile.age;
   document.getElementById("pHeight").value=S.profile.height;
   document.getElementById("pWeight").value=S.profile.weight;
 }
 document.getElementById("saveProfile").addEventListener("click", function(){
+  var nm=String(document.getElementById("pName").value||"").trim().slice(0,24);
   var g=document.getElementById("pGender").value;
   var a=parseInt(document.getElementById("pAge").value,10);
   var h=parseInt(document.getElementById("pHeight").value,10);
-  var w=parseFloat(document.getElementById("pWeight").value.replace(",","."));
+  var w=parseFloat(String(document.getElementById("pWeight").value).replace(",","."));
   if(isNaN(a)||isNaN(w)||w<30||a<10){ toast("Bitte Alter & Gewicht prüfen"); return; }
-  S.profile={gender:g, age:a, height:h||0, weight:w};
+  S.profile={name:nm, gender:g, age:a, height:h||0, weight:w};
   save(); renderAll(); toast("Profil gespeichert");
 });
 document.getElementById("exportBtn").addEventListener("click", function(){
