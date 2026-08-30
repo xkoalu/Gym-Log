@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gym.Log">
+<meta name="theme-color" content="#12141a">
+<title>GYM.LOG</title>
+<style>
+  :root{
+    --bg:#12141a; --bg-elev:#1a1d26; --bg-elev2:#222633;
+    --text:#eceae2; --text-dim:#8c90a0; --border:#2b2f3b;
+    --gold:#d7a63e; --teal:#47a99c; --rust:#c2604a; --lav:#8b7fd6; --blue:#4f93c9;
+    --radius:16px;
+    --mono: ui-monospace,"SF Mono","Menlo",monospace;
+    --sans: -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--sans);overscroll-behavior-y:none;}
+  body{padding:max(16px,env(safe-area-inset-top)) 14px calc(78px + env(safe-area-inset-bottom));}
+  .app{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:18px;}
+  h2{font-family:var(--mono);font-size:11px;letter-spacing:.22em;color:var(--text-dim);margin:0 0 10px 2px;font-weight:600;}
+  .card{background:var(--bg-elev);border:1px solid var(--border);border-radius:var(--radius);padding:14px;}
+
+  /* HUD */
+  .hud{display:flex;align-items:center;gap:14px;background:linear-gradient(160deg,var(--bg-elev),var(--bg-elev2));border:1px solid var(--border);border-radius:var(--radius);padding:14px;}
+  .ring-wrap{position:relative;width:72px;height:72px;flex:none;}
+  .ring-wrap svg{transform:rotate(-90deg);}
+  .ring-track{fill:none;stroke:var(--bg-elev2);stroke-width:6;}
+  .ring-fill{fill:none;stroke:var(--gold);stroke-width:6;stroke-linecap:round;transition:stroke-dasharray .4s ease;}
+  .ring-level{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--mono);}
+  .ring-level .num{font-size:20px;font-weight:700;line-height:1;}
+  .ring-level .lbl{font-size:8px;letter-spacing:.12em;color:var(--text-dim);margin-top:2px;}
+  .hud-info{flex:1;min-width:0;}
+  .hud-title{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--text-dim);margin-bottom:5px;}
+  .xp-line{font-family:var(--mono);font-size:12.5px;margin-bottom:7px;}
+  .xp-line b{color:var(--gold);}
+  .xp-bar-track{height:6px;border-radius:4px;background:var(--bg-elev2);overflow:hidden;}
+  .xp-bar-fill{height:100%;background:var(--gold);border-radius:4px;transition:width .4s ease;}
+  .streak{display:flex;align-items:center;gap:6px;margin-top:8px;font-family:var(--mono);font-size:11.5px;color:var(--rust);}
+
+  /* segmented day picker */
+  .seg{display:flex;background:var(--bg-elev);border:1px solid var(--border);border-radius:12px;padding:4px;gap:4px;}
+  .seg button{flex:1;background:none;border:none;color:var(--text-dim);font-family:var(--sans);font-size:13px;font-weight:600;padding:9px 0;border-radius:9px;}
+  .seg button.active{background:var(--bg-elev2);color:var(--text);}
+
+  /* exercise cards */
+  .ex-card{background:var(--bg-elev);border:1px solid var(--border);border-radius:14px;padding:12px 12px 10px;margin-bottom:10px;}
+  .ex-head{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
+  .ex-dot{width:8px;height:8px;border-radius:50%;flex:none;}
+  .ex-name{font-size:13.5px;font-weight:600;flex:1;line-height:1.3;}
+  .ex-last{font-family:var(--mono);font-size:10px;color:var(--text-dim);}
+  .ex-inputs{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end;}
+  .field label{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.08em;color:var(--text-dim);margin-bottom:4px;}
+  .field input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:var(--mono);font-size:15px;padding:9px 8px;text-align:center;}
+  .field input:focus{outline:none;border-color:var(--teal);}
+  .log-btn{background:var(--bg-elev2);border:1px solid var(--border);border-radius:9px;color:var(--teal);font-size:19px;font-weight:700;width:44px;height:41px;transition:transform .1s;}
+  .log-btn:active{transform:scale(.9);}
+  .assist-toggle{display:flex;gap:6px;margin:0 0 9px;}
+  .assist-toggle button{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:10.5px;padding:6px 0;font-family:var(--mono);letter-spacing:.03em;}
+  .assist-toggle button.active[data-m="plus"]{color:var(--teal);border-color:var(--teal);}
+  .assist-toggle button.active[data-m="minus"]{color:var(--rust);border-color:var(--rust);}
+
+  /* today bar */
+  .today-bar{display:flex;align-items:center;gap:12px;position:sticky;top:8px;z-index:5;background:var(--bg-elev2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;}
+  .today-bar .vol{flex:1;font-family:var(--mono);font-size:12.5px;}
+  .today-bar .vol b{color:var(--teal);font-size:15px;}
+  .finish-btn{background:var(--gold);border:none;border-radius:9px;color:#12141a;font-weight:700;font-size:12.5px;padding:9px 13px;}
+  .finish-btn:disabled{opacity:.4;}
+
+  /* history */
+  #historyList{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;}
+  #historyList li{display:flex;align-items:center;gap:9px;background:var(--bg-elev);border:1px solid var(--border);border-radius:10px;padding:8px 11px;font-size:12px;}
+  #historyList .hname{flex:1;line-height:1.3;}
+  #historyList .hdet{font-family:var(--mono);color:var(--text-dim);font-size:10.5px;white-space:nowrap;}
+  #historyList .hdel{background:none;border:none;color:var(--text-dim);font-size:15px;padding:0 0 0 5px;}
+  .empty{color:var(--text-dim);font-size:12.5px;padding:8px 2px;}
+
+  /* leagues */
+  .league-card{display:flex;align-items:center;gap:12px;background:var(--bg-elev);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:10px;}
+  .league-badge{width:52px;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;font-family:var(--mono);}
+  .league-badge .tier{font-size:8px;letter-spacing:.06em;font-weight:700;color:#12141a;}
+  .league-badge .icon{font-size:20px;line-height:1;}
+  .league-info{flex:1;min-width:0;}
+  .league-name{font-size:13.5px;font-weight:600;margin-bottom:2px;}
+  .league-score{font-family:var(--mono);font-size:10.5px;color:var(--text-dim);margin-bottom:7px;}
+  .league-track{height:6px;background:var(--bg-elev2);border-radius:4px;overflow:hidden;}
+  .league-fill{height:100%;border-radius:4px;transition:width .4s ease;}
+  .note{font-size:11.5px;color:var(--text-dim);line-height:1.5;margin-top:4px;}
+
+  /* charts */
+  .chart-box{background:var(--bg-elev);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:14px;}
+  .chart-title{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--text-dim);margin-bottom:8px;}
+  select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:13px;padding:9px;margin-bottom:10px;-webkit-appearance:none;}
+
+  /* profile */
+  .prof-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+  .prof-grid .field.wide{grid-column:span 2;}
+  .prof-grid select{margin-bottom:0;}
+  .save-btn{width:100%;background:var(--teal);border:none;border-radius:10px;color:#12141a;font-weight:700;font-size:13.5px;padding:12px;}
+  .ghost-btn{width:100%;background:none;border:1px solid var(--border);border-radius:10px;color:var(--text-dim);font-size:12px;padding:10px;margin-top:8px;font-family:var(--mono);}
+
+  /* tabs */
+  .tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;background:rgba(18,20,26,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--border);padding:6px 8px calc(6px + env(safe-area-inset-bottom));z-index:20;}
+  .tabbar button{flex:1;background:none;border:none;color:var(--text-dim);font-size:10px;font-family:var(--mono);letter-spacing:.05em;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;}
+  .tabbar button.active{color:var(--gold);}
+  .tabbar .ico{font-size:18px;line-height:1;}
+  .tab{display:none;}
+  .tab.active{display:flex;flex-direction:column;gap:18px;}
+
+  /* toast + overlay */
+  #toast{position:fixed;left:50%;bottom:88px;transform:translate(-50%,20px);background:var(--bg-elev2);border:1px solid var(--border);color:var(--text);padding:10px 18px;border-radius:999px;font-family:var(--mono);font-size:12px;opacity:0;pointer-events:none;transition:.25s;white-space:nowrap;z-index:30;}
+  #toast.show{opacity:1;transform:translate(-50%,0);}
+  #overlay{position:fixed;inset:0;background:rgba(10,11,15,.8);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:40;padding:24px;}
+  #overlay.show{display:flex;}
+  .summary{background:var(--bg-elev);border:1px solid var(--border);border-radius:18px;padding:22px;max-width:340px;width:100%;text-align:center;}
+  .summary h3{font-family:var(--mono);letter-spacing:.15em;font-size:11px;color:var(--text-dim);margin:0 0 14px;}
+  .summary .big{font-family:var(--mono);font-size:34px;font-weight:700;color:var(--teal);line-height:1;}
+  .summary .big-lbl{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.1em;margin:6px 0 16px;}
+  .summary .row{display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-top:1px solid var(--border);}
+  .summary .row b{font-family:var(--mono);color:var(--gold);}
+  .summary button{margin-top:16px;width:100%;background:var(--gold);border:none;border-radius:10px;color:#12141a;font-weight:700;padding:12px;font-size:13.5px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="hud">
+    <div class="ring-wrap">
+      <svg width="72" height="72" viewBox="0 0 72 72">
+        <circle class="ring-track" cx="36" cy="36" r="30"></circle>
+        <circle class="ring-fill" id="ringFill" cx="36" cy="36" r="30" stroke-dasharray="0 189"></circle>
+      </svg>
+      <div class="ring-level"><div class="num" id="levelNum">1</div><div class="lbl">LVL</div></div>
+    </div>
+    <div class="hud-info">
+      <div class="hud-title">GYM.LOG · CHARAKTERBOGEN</div>
+      <div class="xp-line"><b id="xpInto">0</b> / <span id="xpNeed">100</span> XP</div>
+      <div class="xp-bar-track"><div class="xp-bar-fill" id="xpBar" style="width:0%"></div></div>
+      <div class="streak">🔥 <span id="streakVal">0</span>&nbsp;Tage Streak</div>
+    </div>
+  </header>
+
+  <!-- TRAINING -->
+  <div class="tab active" id="tab-training">
+    <div class="today-bar">
+      <div class="vol">Heute: <b id="todayVol">0</b> kg bewegt</div>
+      <button class="finish-btn" id="finishBtn">Workout abschließen</button>
+    </div>
+    <div class="seg" id="daySeg">
+      <button data-day="push" class="active">Push</button>
+      <button data-day="pull">Pull</button>
+      <button data-day="legs">Legs</button>
+    </div>
+    <div id="exList"></div>
+    <section>
+      <h2>LETZTE EINTRÄGE</h2>
+      <ul id="historyList"></ul>
+    </section>
+  </div>
+
+  <!-- FORTSCHRITT -->
+  <div class="tab" id="tab-progress">
+    <section>
+      <h2>FORTSCHRITT</h2>
+      <div class="chart-box">
+        <div class="chart-title">GESAMTVOLUMEN PRO WORKOUT (KG)</div>
+        <div id="volChart"></div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-title">KRAFTENTWICKLUNG PRO ÜBUNG (GESCH. 1RM, KG)</div>
+        <select id="exSelect"></select>
+        <div id="exChart"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- LIGEN -->
+  <div class="tab" id="tab-leagues">
+    <section>
+      <h2>LIGEN PRO MUSKELGRUPPE</h2>
+      <div id="leagueList"></div>
+      <p class="note">Die Ligen basieren auf gängigen Kraftstandards (relativ zum Körpergewicht, angepasst an Geschlecht &amp; Alter). <b style="color:var(--gold)">Gold = Durchschnitt.</b> Dadurch sind Ligen zwischen unterschiedlichen Personen direkt vergleichbar – z.&nbsp;B. du (190&nbsp;cm, 90&nbsp;kg, m) gegen jemanden mit 165&nbsp;cm, w: Wer die höhere Liga bzw. den höheren Score hat, ist <i>relativ</i> stärker. Die Werte sind Näherungen, keine Wettkampfstandards.</p>
+    </section>
+  </div>
+
+  <!-- PROFIL -->
+  <div class="tab" id="tab-profile">
+    <section>
+      <h2>PROFIL</h2>
+      <div class="card">
+        <div class="prof-grid">
+          <div class="field"><label>GESCHLECHT</label>
+            <select id="pGender"><option value="m">Männlich</option><option value="w">Weiblich</option></select>
+          </div>
+          <div class="field"><label>ALTER</label><input id="pAge" type="number" inputmode="numeric" placeholder="25"></div>
+          <div class="field"><label>GRÖSSE (CM)</label><input id="pHeight" type="number" inputmode="numeric" placeholder="180"></div>
+          <div class="field"><label>GEWICHT (KG)</label><input id="pWeight" type="number" inputmode="decimal" placeholder="80"></div>
+        </div>
+        <button class="save-btn" id="saveProfile">Profil speichern</button>
+        <p class="note">Körpergewicht, Geschlecht und Alter fließen in die Liga-Bewertung ein. Die Größe wird gespeichert, hat aber auf die Standards kaum Einfluss – Kraftstandards richten sich primär nach dem Körpergewicht. Bei Dips und Pull-ups wird dein Körpergewicht automatisch mitgerechnet – wähle dort „+ Zusatzgewicht" oder „− Unterstützt" (Gegengewicht der Maschine). Für Pull-ups und Dips gelten eigene Frauen-Standards, da diese Übungen für Frauen relativ deutlich schwerer sind (Ø 6 vs. 13 Pull-ups).</p>
+      </div>
+      <div class="card" style="margin-top:12px;">
+        <div class="chart-title">DATEN</div>
+        <button class="ghost-btn" id="exportBtn">Backup exportieren (JSON)</button>
+        <label class="ghost-btn" style="display:block;text-align:center;">
+          Backup importieren<input id="importFile" type="file" accept=".json" style="display:none;">
+        </label>
+        <button class="ghost-btn" id="resetBtn" style="color:var(--rust);">Alle Daten zurücksetzen</button>
+      </div>
+    </section>
+  </div>
+
+</div>
+
+<nav class="tabbar">
+  <button data-tab="training" class="active"><span class="ico">🏋️</span>Training</button>
+  <button data-tab="progress"><span class="ico">📈</span>Fortschritt</button>
+  <button data-tab="leagues"><span class="ico">🏆</span>Ligen</button>
+  <button data-tab="profile"><span class="ico">👤</span>Profil</button>
+</nav>
+
+<div id="toast"></div>
+<div id="overlay"><div class="summary" id="summaryBox"></div></div>
+
+<script>
+(function(){
+"use strict";
+
+var KEY = "gymlog_v2_state";
+
+/* ---------- Übungen ----------
+   bench = geschätztes 1RM-Niveau des Durchschnitts (Intermediate) als Faktor × Körpergewicht (männlich).
+   bw    = Körpergewichts-Anteil, der beim Loggen automatisch zum eingetragenen Gewicht addiert wird. */
+var EX = [
+  {id:"bench_m",   day:"push", group:"Brust",     name:"Bankdrücken (Maschine)",           bench:1.00, bw:0},
+  {id:"iso_chest", day:"push", group:"Brust",     name:"ISO Lateral Wide Chest",           bench:1.00, bw:0},
+  {id:"butterfly", day:"push", group:"Brust",     name:"Butterfly",                        bench:0.90, bw:0},
+  {id:"dips",      day:"push", group:"Brust",     name:"Dips",                             bench:1.65, bw:1, genderF:0.80},
+  {id:"shoulder_p",day:"push", group:"Schultern", name:"Schulterdrücken (Maschine)",       bench:0.75, bw:0},
+  {id:"biz_unten", day:"push", group:"Arme",      name:"Trizeps Kabelzug (nach unten)",    bench:0.55, bw:0},
+  {id:"biz_kopf",  day:"push", group:"Arme",      name:"Trizeps Kabelzug (über Kopf)",     bench:0.45, bw:0},
+  {id:"legraise",  day:"push", group:"Bauch",     name:"Beinheben (Zusatzgewicht)",        bench:0.65, bw:0.3},
+
+  {id:"row_eng",   day:"pull", group:"Rücken",    name:"Rudern eng (Kabelzug)",            bench:0.90, bw:0},
+  {id:"row_breit", day:"pull", group:"Rücken",    name:"Rudern breit (Kabelzug)",          bench:0.85, bw:0},
+  {id:"pu_breit",  day:"pull", group:"Rücken",    name:"Pull-ups breit",                   bench:1.45, bw:1, genderF:0.83},
+  {id:"pu_eng",    day:"pull", group:"Rücken",    name:"Pull-ups eng",                     bench:1.45, bw:1, genderF:0.83},
+  {id:"rev_bfly",  day:"pull", group:"Schultern", name:"Reverse Butterfly",                bench:0.70, bw:0},
+  {id:"seitheben", day:"pull", group:"Schultern", name:"Seitheben (pro Kurzhantel)",       bench:0.15, bw:0},
+  {id:"biz_masch", day:"pull", group:"Arme",      name:"Bizepscurls (Maschine)",           bench:0.55, bw:0},
+  {id:"hammer",    day:"pull", group:"Arme",      name:"Hammercurls (Kabelzug)",           bench:0.45, bw:0},
+  {id:"abs_masch", day:"pull", group:"Bauch",     name:"Bauch (Maschine)",                 bench:0.60, bw:0},
+
+  {id:"legpress",  day:"legs", group:"Beine",     name:"Beinpresse",                       bench:2.20, bw:0},
+  {id:"legext",    day:"legs", group:"Beine",     name:"Beinstrecker",                     bench:1.10, bw:0},
+  {id:"legcurl",   day:"legs", group:"Beine",     name:"Beinbeuger",                       bench:0.95, bw:0},
+  {id:"adduktor",  day:"legs", group:"Beine",     name:"Hip Adduktor",                     bench:1.00, bw:0},
+  {id:"abduktor",  day:"legs", group:"Beine",     name:"Hip Abduktor",                     bench:1.00, bw:0},
+  {id:"calves",    day:"legs", group:"Beine",     name:"Wadenheben stehend",               bench:1.40, bw:0},
+  {id:"lowback",   day:"legs", group:"Rücken",    name:"Unterer Rücken (Maschine)",        bench:1.00, bw:0}
+];
+function exById(id){ for(var i=0;i<EX.length;i++) if(EX[i].id===id) return EX[i]; return null; }
+
+var GROUPS = ["Brust","Rücken","Schultern","Arme","Beine","Bauch"];
+var GROUP_COLORS = {"Brust":"var(--teal)","Rücken":"var(--gold)","Schultern":"var(--lav)","Arme":"var(--blue)","Beine":"var(--rust)","Bauch":"#7fae6e"};
+/* Geschlechtsfaktor: weibliche Standards relativ zu männlichen */
+var GENDER_F = {"Brust":0.58,"Rücken":0.60,"Schultern":0.58,"Arme":0.58,"Beine":0.72,"Bauch":0.65};
+
+var LEAGUES = [
+  {name:"Bronze",  max:0.55, color:"#b0764a", icon:"🥉"},
+  {name:"Silber",  max:0.80, color:"#9aa3b2", icon:"🥈"},
+  {name:"Gold",    max:1.20, color:"#d7a63e", icon:"🥇"},
+  {name:"Platin",  max:1.60, color:"#7fd1c8", icon:"💠"},
+  {name:"Diamant", max:2.00, color:"#7fb8f0", icon:"💎"},
+  {name:"Meister", max:99,   color:"#c77fd6", icon:"👑"}
+];
+
+/* ---------- State ---------- */
+function def(){ return {profile:null, totalXP:0, streak:0, lastLogDate:null, finishedDates:[], entries:[], lastInputs:{}}; }
+function load(){
+  try{ var r=localStorage.getItem(KEY); if(!r) return def();
+    var p=JSON.parse(r); return Object.assign(def(), p);
+  }catch(e){ return def(); }
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){ toast("Speichern fehlgeschlagen"); } }
+var S = load();
+
+/* ---------- Helpers ---------- */
+function today(){ return new Date().toISOString().slice(0,10); }
+function isYesterday(prev, cur){
+  return Math.round((new Date(cur+"T00:00:00") - new Date(prev+"T00:00:00"))/86400000) === 1;
+}
+function est1RM(w, reps){ return w * (1 + reps/30); }
+function fmt(n){ return Math.round(n).toLocaleString("de-DE"); }
+function toast(msg){
+  var t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(toast._t); toast._t=setTimeout(function(){t.classList.remove("show");},1700);
+}
+function levelFromXP(xp){
+  var lvl=1, req=100, rem=xp;
+  while(rem>=req){ rem-=req; lvl++; req=100+(lvl-1)*30; }
+  return {level:lvl, into:rem, need:req};
+}
+function ageFactor(age){
+  if(!age) return 1;
+  if(age<20) return 0.95;
+  if(age<=35) return 1;
+  return Math.max(0.7, 1-(age-35)*0.01);
+}
+
+/* ---------- Logging ---------- */
+function addEntry(exId){
+  var ex = exById(exId);
+  var w = parseFloat(document.getElementById("w_"+exId).value.replace(",","."));
+  var reps = parseInt(document.getElementById("r_"+exId).value, 10);
+  var sets = parseInt(document.getElementById("s_"+exId).value, 10);
+  if(isNaN(reps)||isNaN(sets)||reps<1||sets<1){ toast("Wdh. und Sätze angeben"); return; }
+  if(isNaN(w)) w = 0;
+  w = Math.abs(w);
+  if(ex.bw===1){
+    var t=document.getElementById("t_"+exId);
+    if(t){
+      var act=t.querySelector("button.active");
+      if(act && act.getAttribute("data-m")==="minus") w = -w;
+    }
+  }
+  if(ex.bw>0 && !S.profile){ toast("Erst Profil anlegen (Körpergewicht)"); switchTab("profile"); return; }
+
+  var bwPart = ex.bw>0 && S.profile ? S.profile.weight*ex.bw : 0;
+  var eff = w + bwPart;
+  if(eff<=0){ toast(w<0 ? "Unterstützung übersteigt dein Körpergewicht" : "Gewicht angeben"); return; }
+  var volume = eff * reps * sets;
+  var xp = sets*10 + Math.floor(volume/250);
+
+  S.totalXP += xp;
+  var d = today();
+  if(S.lastLogDate !== d){
+    S.streak = (S.lastLogDate && isYesterday(S.lastLogDate,d)) ? S.streak+1 : 1;
+    S.lastLogDate = d;
+  }
+  S.entries.push({id:Date.now()+"_"+Math.random().toString(36).slice(2,6), ex:exId, date:d, ts:Date.now(),
+                  w:w, eff:eff, reps:reps, sets:sets, vol:volume, xp:xp});
+  S.lastInputs[exId] = {w:w, reps:reps, sets:sets};
+  save(); renderAll();
+  toast("+"+xp+" XP · "+fmt(volume)+" kg Volumen");
+}
+
+function deleteEntry(id){
+  for(var i=S.entries.length-1;i>=0;i--){
+    if(S.entries[i].id===id){
+      S.totalXP = Math.max(0, S.totalXP - S.entries[i].xp);
+      S.entries.splice(i,1); break;
+    }
+  }
+  save(); renderAll();
+}
+
+function finishWorkout(){
+  var d = today();
+  var vol = todayVolume();
+  if(vol<=0){ toast("Heute noch nichts geloggt"); return; }
+  var bonus = 0;
+  if(S.finishedDates.indexOf(d)===-1){ bonus=60; S.totalXP+=bonus; S.finishedDates.push(d); save(); }
+  var sets=0, entries=0;
+  S.entries.forEach(function(e){ if(e.date===d){ sets+=e.sets; entries++; } });
+  var box=document.getElementById("summaryBox");
+  box.innerHTML =
+    '<h3>WORKOUT ABGESCHLOSSEN</h3>'+
+    '<div class="big">'+fmt(vol)+'</div><div class="big-lbl">KG GESAMT BEWEGT</div>'+
+    '<div class="row"><span>Übungen</span><b>'+entries+'</b></div>'+
+    '<div class="row"><span>Sätze</span><b>'+sets+'</b></div>'+
+    '<div class="row"><span>Abschluss-Bonus</span><b>'+(bonus?'+'+bonus+' XP':'bereits erhalten')+'</b></div>'+
+    '<button id="closeOverlay">Stark! 💪</button>';
+  document.getElementById("overlay").classList.add("show");
+  document.getElementById("closeOverlay").addEventListener("click", function(){
+    document.getElementById("overlay").classList.remove("show"); renderAll();
+  });
+}
+function todayVolume(){
+  var d=today(), v=0;
+  S.entries.forEach(function(e){ if(e.date===d) v+=e.vol; });
+  return v;
+}
+
+/* ---------- Ligen ---------- */
+function groupScores(){
+  if(!S.profile) return null;
+  var p=S.profile, af=ageFactor(p.age);
+  var cutoff = Date.now() - 90*86400000;
+  var best = {}; // exId -> best est1RM (letzte 90 Tage)
+  S.entries.forEach(function(e){
+    if(e.ts<cutoff) return;
+    var v = est1RM(e.eff, e.reps);
+    if(!best[e.ex] || v>best[e.ex]) best[e.ex]=v;
+  });
+  var res={};
+  GROUPS.forEach(function(g){
+    var sc=null;
+    EX.forEach(function(ex){
+      if(ex.group!==g || !best[ex.id]) return;
+      var gf = p.gender==="w" ? (ex.genderF || GENDER_F[g]) : 1;
+      var benchmark = ex.bench * p.weight * gf * af;
+      var s = best[ex.id]/benchmark;
+      if(sc===null || s>sc) sc=s;
+    });
+    res[g]=sc;
+  });
+  return res;
+}
+function leagueFor(score){
+  for(var i=0;i<LEAGUES.length;i++){ if(score<LEAGUES[i].max) return {idx:i, l:LEAGUES[i]}; }
+  return {idx:LEAGUES.length-1, l:LEAGUES[LEAGUES.length-1]};
+}
+
+/* ---------- Rendering ---------- */
+var activeDay="push", activeTab="training";
+
+function renderHud(){
+  var lv=levelFromXP(S.totalXP);
+  document.getElementById("levelNum").textContent=lv.level;
+  document.getElementById("xpInto").textContent=lv.into;
+  document.getElementById("xpNeed").textContent=lv.need;
+  document.getElementById("xpBar").style.width=Math.round(lv.into/lv.need*100)+"%";
+  document.getElementById("streakVal").textContent=S.streak;
+  var c=2*Math.PI*30;
+  document.getElementById("ringFill").setAttribute("stroke-dasharray",(c*lv.into/lv.need)+" "+c);
+}
+
+function renderExList(){
+  var wrap=document.getElementById("exList"); wrap.innerHTML="";
+  EX.forEach(function(ex){
+    if(ex.day!==activeDay) return;
+    var li=S.lastInputs[ex.id]||{};
+    var isAssist = li.w!==undefined && li.w<0;
+    var absW = li.w!==undefined ? Math.abs(li.w) : "";
+    var card=document.createElement("div"); card.className="ex-card";
+    var toggle = ex.bw===1 ?
+      '<div class="assist-toggle" id="t_'+ex.id+'">'+
+      '<button data-m="plus"'+(!isAssist?' class="active"':'')+'>+ Zusatzgewicht</button>'+
+      '<button data-m="minus"'+(isAssist?' class="active"':'')+'>− Unterstützt</button></div>' : '';
+    card.innerHTML=
+      '<div class="ex-head"><span class="ex-dot" style="background:'+GROUP_COLORS[ex.group]+'"></span>'+
+      '<span class="ex-name">'+ex.name+'</span>'+
+      '<span class="ex-last">'+(li.w!==undefined ? li.w+"kg × "+li.reps : "")+'</span></div>'+
+      toggle+
+      '<div class="ex-inputs">'+
+      '<div class="field"><label>KG</label><input id="w_'+ex.id+'" type="text" inputmode="decimal" value="'+absW+'" placeholder="0"></div>'+
+      '<div class="field"><label>WDH</label><input id="r_'+ex.id+'" type="number" inputmode="numeric" value="'+(li.reps||"")+'" placeholder="10"></div>'+
+      '<div class="field"><label>SÄTZE</label><input id="s_'+ex.id+'" type="number" inputmode="numeric" value="'+(li.sets||"")+'" placeholder="3"></div>'+
+      '<button class="log-btn" aria-label="loggen">＋</button></div>';
+    card.querySelector(".log-btn").addEventListener("click", function(){ addEntry(ex.id); });
+    card.querySelectorAll(".assist-toggle button").forEach(function(tb){
+      tb.addEventListener("click", function(){
+        card.querySelectorAll(".assist-toggle button").forEach(function(x){ x.classList.remove("active"); });
+        tb.classList.add("active");
+      });
+    });
+    wrap.appendChild(card);
+  });
+}
+
+function renderHistory(){
+  var list=document.getElementById("historyList"); list.innerHTML="";
+  if(S.entries.length===0){
+    list.innerHTML='<li class="empty" style="background:none;border:none;">Noch keine Einträge.</li>'; return;
+  }
+  S.entries.slice(-8).reverse().forEach(function(e){
+    var ex=exById(e.ex);
+    var li=document.createElement("li");
+    li.innerHTML='<span class="ex-dot" style="background:'+GROUP_COLORS[ex.group]+'"></span>'+
+      '<span class="hname">'+ex.name+'</span>'+
+      '<span class="hdet">'+e.w+'kg × '+e.reps+' × '+e.sets+' · '+fmt(e.vol)+'kg</span>'+
+      '<button class="hdel">×</button>';
+    li.querySelector(".hdel").addEventListener("click", function(){ deleteEntry(e.id); });
+    list.appendChild(li);
+  });
+}
+
+function renderToday(){
+  document.getElementById("todayVol").textContent=fmt(todayVolume());
+}
+
+function renderLeagues(){
+  var wrap=document.getElementById("leagueList"); wrap.innerHTML="";
+  if(!S.profile){
+    wrap.innerHTML='<p class="empty">Leg zuerst dein Profil an (Geschlecht, Alter, Gewicht), damit die Ligen berechnet werden können.</p>'; return;
+  }
+  var scores=groupScores();
+  GROUPS.forEach(function(g){
+    var sc=scores[g];
+    var card=document.createElement("div"); card.className="league-card";
+    if(sc===null){
+      card.innerHTML='<div class="league-badge" style="background:var(--bg-elev2)"><span class="icon">–</span></div>'+
+        '<div class="league-info"><div class="league-name">'+g+'</div>'+
+        '<div class="league-score">Noch keine Daten (letzte 90 Tage)</div></div>';
+    } else {
+      var L=leagueFor(sc);
+      var lo = L.idx===0 ? 0 : LEAGUES[L.idx-1].max;
+      var hi = L.l.max===99 ? sc : L.l.max;
+      var prog = L.l.max===99 ? 100 : Math.min(100, Math.round((sc-lo)/(hi-lo)*100));
+      card.innerHTML=
+        '<div class="league-badge" style="background:'+L.l.color+'"><span class="icon">'+L.l.icon+'</span><span class="tier">'+L.l.name.toUpperCase()+'</span></div>'+
+        '<div class="league-info"><div class="league-name">'+g+'</div>'+
+        '<div class="league-score">Score '+sc.toFixed(2)+' · '+(sc>=1?"+":"")+Math.round((sc-1)*100)+'% vs. Durchschnitt</div>'+
+        '<div class="league-track"><div class="league-fill" style="width:'+prog+'%;background:'+L.l.color+'"></div></div></div>';
+    }
+    wrap.appendChild(card);
+  });
+}
+
+/* ---------- Charts (SVG) ---------- */
+function lineChart(points, color){
+  var W=300, H=140, P=26;
+  if(points.length===0) return '<p class="empty">Noch keine Daten.</p>';
+  if(points.length===1) points=[points[0], points[0]];
+  var ys=points.map(function(p){return p.y;});
+  var min=Math.min.apply(null,ys), max=Math.max.apply(null,ys);
+  if(min===max){ min=min*0.9; max=max*1.1||1; }
+  var span=max-min;
+  function X(i){ return P + i/(points.length-1)*(W-2*P); }
+  function Y(v){ return H-P - (v-min)/span*(H-2*P); }
+  var path=points.map(function(p,i){ return (i===0?"M":"L")+X(i).toFixed(1)+" "+Y(p.y).toFixed(1); }).join(" ");
+  var dots=points.map(function(p,i){ return '<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(p.y).toFixed(1)+'" r="3" fill="'+color+'"/>'; }).join("");
+  var first=points[0].label||"", last=points[points.length-1].label||"";
+  return '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;">'+
+    '<line x1="'+P+'" y1="'+(H-P)+'" x2="'+(W-P)+'" y2="'+(H-P)+'" stroke="var(--border)"/>'+
+    '<text x="'+P+'" y="12" font-size="9" fill="#8c90a0" font-family="var(--mono)">'+fmt(max)+'</text>'+
+    '<text x="'+P+'" y="'+(H-P+14)+'" font-size="9" fill="#8c90a0" font-family="var(--mono)">'+first+'</text>'+
+    '<text x="'+(W-P)+'" y="'+(H-P+14)+'" font-size="9" fill="#8c90a0" text-anchor="end" font-family="var(--mono)">'+last+'</text>'+
+    '<path d="'+path+'" fill="none" stroke="'+color+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>'+dots+'</svg>';
+}
+function shortDate(iso){ return iso.slice(8,10)+"."+iso.slice(5,7)+"."; }
+
+function renderCharts(){
+  // Volumen pro Workout-Tag
+  var byDate={};
+  S.entries.forEach(function(e){ byDate[e.date]=(byDate[e.date]||0)+e.vol; });
+  var dates=Object.keys(byDate).sort().slice(-15);
+  var volPts=dates.map(function(d){ return {y:byDate[d], label:shortDate(d)}; });
+  document.getElementById("volChart").innerHTML=lineChart(volPts,"#47a99c");
+
+  // Übungsauswahl
+  var sel=document.getElementById("exSelect");
+  var haveData={};
+  S.entries.forEach(function(e){ haveData[e.ex]=1; });
+  var current=sel.value;
+  sel.innerHTML="";
+  EX.forEach(function(ex){
+    if(!haveData[ex.id]) return;
+    var o=document.createElement("option"); o.value=ex.id; o.textContent=ex.name; sel.appendChild(o);
+  });
+  if(sel.options.length===0){
+    document.getElementById("exChart").innerHTML='<p class="empty">Logge Übungen, um hier deine Kraftkurve zu sehen.</p>'; return;
+  }
+  if(current && haveData[current]) sel.value=current;
+  renderExChart();
+}
+function renderExChart(){
+  var exId=document.getElementById("exSelect").value;
+  var byDate={};
+  S.entries.forEach(function(e){
+    if(e.ex!==exId) return;
+    var v=est1RM(e.eff,e.reps);
+    if(!byDate[e.date]||v>byDate[e.date]) byDate[e.date]=v;
+  });
+  var dates=Object.keys(byDate).sort().slice(-15);
+  var pts=dates.map(function(d){ return {y:byDate[d], label:shortDate(d)}; });
+  document.getElementById("exChart").innerHTML=lineChart(pts,"#d7a63e");
+}
+
+/* ---------- Profil / Daten ---------- */
+function renderProfile(){
+  if(!S.profile) return;
+  document.getElementById("pGender").value=S.profile.gender;
+  document.getElementById("pAge").value=S.profile.age;
+  document.getElementById("pHeight").value=S.profile.height;
+  document.getElementById("pWeight").value=S.profile.weight;
+}
+document.getElementById("saveProfile").addEventListener("click", function(){
+  var g=document.getElementById("pGender").value;
+  var a=parseInt(document.getElementById("pAge").value,10);
+  var h=parseInt(document.getElementById("pHeight").value,10);
+  var w=parseFloat(document.getElementById("pWeight").value.replace(",","."));
+  if(isNaN(a)||isNaN(w)||w<30||a<10){ toast("Bitte Alter & Gewicht prüfen"); return; }
+  S.profile={gender:g, age:a, height:h||0, weight:w};
+  save(); renderAll(); toast("Profil gespeichert");
+});
+document.getElementById("exportBtn").addEventListener("click", function(){
+  var blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="gymlog-backup-"+today()+".json";
+  document.body.appendChild(a); a.click(); a.remove();
+});
+document.getElementById("importFile").addEventListener("change", function(ev){
+  var f=ev.target.files[0]; if(!f) return;
+  var r=new FileReader();
+  r.onload=function(){
+    try{
+      var p=JSON.parse(r.result);
+      if(!p.entries){ toast("Ungültige Datei"); return; }
+      S=Object.assign(def(),p); save(); renderAll(); toast("Backup importiert");
+    }catch(e){ toast("Import fehlgeschlagen"); }
+  };
+  r.readAsText(f);
+});
+document.getElementById("resetBtn").addEventListener("click", function(){
+  if(!confirm("Wirklich ALLE Daten löschen?")) return;
+  S=def(); save(); renderAll(); toast("Zurückgesetzt");
+});
+document.getElementById("finishBtn").addEventListener("click", finishWorkout);
+document.getElementById("exSelect").addEventListener("change", renderExChart);
+
+/* ---------- Tabs / Days ---------- */
+function switchTab(name){
+  activeTab=name;
+  document.querySelectorAll(".tab").forEach(function(t){ t.classList.remove("active"); });
+  document.getElementById("tab-"+name).classList.add("active");
+  document.querySelectorAll(".tabbar button").forEach(function(b){
+    b.classList.toggle("active", b.getAttribute("data-tab")===name);
+  });
+  renderAll();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll(".tabbar button").forEach(function(b){
+  b.addEventListener("click", function(){ switchTab(b.getAttribute("data-tab")); });
+});
+document.querySelectorAll("#daySeg button").forEach(function(b){
+  b.addEventListener("click", function(){
+    activeDay=b.getAttribute("data-day");
+    document.querySelectorAll("#daySeg button").forEach(function(x){ x.classList.remove("active"); });
+    b.classList.add("active");
+    renderExList();
+  });
+});
+
+function renderAll(){
+  renderHud();
+  if(activeTab==="training"){ renderExList(); renderHistory(); renderToday(); }
+  if(activeTab==="progress"){ renderCharts(); }
+  if(activeTab==="leagues"){ renderLeagues(); }
+  if(activeTab==="profile"){ renderProfile(); }
+}
+
+if(!S.profile){ switchTab("profile"); toast("Leg zuerst dein Profil an 👤"); }
+else renderAll();
+})();
+</script>
+</body>
+</html>
