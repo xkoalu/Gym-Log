@@ -3,8 +3,6 @@
   "short_name": "GYM.LOG",
   "description": "Trainingstagebuch mit Ligen, Erfolgen und Titeln – alle Daten bleiben auf dem Gerät.",
   "lang": "de",
-  "start_url": "/Gym-Log/",
-  "scope": "/Gym-Log/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#04060d",
