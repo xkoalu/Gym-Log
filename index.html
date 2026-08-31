@@ -693,15 +693,15 @@ var TEMPLATES={
     {id:"lower", name:"Unterkörper", ex:["squat","rdl","legpress","legcurl","calves","legraise"]}
   ]},
   full:{name:"Ganzkörper", days:[
-    {id:"fbA", name:"Tag A", ex:["squat","bench_bb","row_bb","ohp","abs_masch"]},
-    {id:"fbB", name:"Tag B", ex:["deadlift","incline_db","latpull","legcurl","legraise"]}
+    {id:"fbA", name:"Tag A", ex:["squat","bench_bb","row_bb","ohp","curl_bb","abs_masch"]},
+    {id:"fbB", name:"Tag B", ex:["deadlift","incline_db","latpull","legcurl","biz_unten","legraise"]}
   ]},
   bro:{name:"Bro-Split", days:[
     {id:"chest", name:"Brust", ex:["bench_bb","incline_db","butterfly","dips"]},
     {id:"back",  name:"Rücken", ex:["deadlift","pu_breit","row_bb","latpull","shrug"]},
     {id:"sh",    name:"Schultern", ex:["ohp","seitheben","rev_bfly","facepull"]},
-    {id:"arms",  name:"Arme", ex:["curl_bb","hammer_db","close_bench","biz_unten"]},
-    {id:"legs2", name:"Beine", ex:["squat","legpress","legcurl","calves"]}
+    {id:"arms",  name:"Arme", ex:["curl_bb","hammer_db","close_bench","biz_unten","abs_masch"]},
+    {id:"legs2", name:"Beine", ex:["squat","legpress","legcurl","calves","legraise"]}
   ]},
   custom:{name:"Eigener Plan", days:[
     {id:"d1", name:"Tag 1", ex:[]},
@@ -768,7 +768,7 @@ var LEAGUES = [
 ];
 
 /* ---------- State ---------- */
-function def(){ return {plan:defaultPlan(), profile:null, totalXP:0, streak:0, lastLogDate:null, finishedDates:[], entries:[], lastInputs:{}, leaguePeak:{}, achSeen:{}, titlesSeen:{}, title:null}; }
+function def(){ return {plan:defaultPlan(), profile:null, calibAsked:0, calibOptOut:false, totalXP:0, streak:0, lastLogDate:null, finishedDates:[], entries:[], lastInputs:{}, leaguePeak:{}, achSeen:{}, titlesSeen:{}, title:null}; }
 function load(){
   try{ var r=localStorage.getItem(KEY); if(!r) return def();
     var p=JSON.parse(r); var st=Object.assign(def(), p);
@@ -1646,6 +1646,52 @@ function checkAchievements(notify){
   if(notify && events.length) queueCelebrations(events);
 }
 
+/* ---------- Kalibrierungs-Erinnerung ---------- */
+function maybeAskCalibration(){
+  if(!S.profile || S.calibOptOut) return false;
+  var st=computeStats();
+  /* nur bei aktiven Nutzern: mind. 30 Trainingstage und 12 aktive Wochen */
+  if(st.workoutDays<30) return false;
+  if(Object.keys(st.weekSet).length<12) return false;
+  var now=Date.now();
+  if(S.calibAsked && now-S.calibAsked < 90*86400000) return false;
+  if(!S.calibAsked){
+    /* beim ersten Mal erst fragen, wenn wirklich Daten da sind */
+    S.calibAsked=now; save();
+  } else { S.calibAsked=now; save(); }
+
+  var box=document.getElementById("summaryBox");
+  box.className="summary info";
+  box.innerHTML=
+    '<button class="popup-x" id="popupX">\u00d7</button>'+
+    '<h3>DATEN TEILEN?</h3>'+
+    '<div class="info-scroll">'+
+    '<p>Du trainierst seit '+Object.keys(st.weekSet).length+' Wochen und hast '+st.workoutDays+' Trainingstage geloggt. '+
+    'Mit einem Export deiner Werte lassen sich die Referenzwerte der Ligen verbessern – vor allem bei Maschinenübungen, '+
+    'für die es kaum öffentliche Daten gibt.</p>'+
+    '<h4>Was drin steht</h4>'+
+    '<p class="dim">Pro Übung dein bestes geschätztes Maximum, dein Trainingsplan, Geschlecht, Alter, Größe, Gewicht, '+
+    'Erfahrung und Trainingszeitraum. <b style="color:var(--accent)">Kein Name, keine Einzeleinträge.</b></p>'+
+    '<h4>Was passiert</h4>'+
+    '<p class="dim">Die Datei landet nur auf deinem Gerät. Du entscheidest selbst, ob und wem du sie schickst. '+
+    'Nichts wird automatisch verschickt.</p>'+
+    '</div>'+
+    '<button id="calibNow">Export erstellen</button>'+
+    '<button id="calibLater" style="background:rgba(4,8,18,.7);color:var(--text);border-color:var(--border);margin-top:8px;">Später erinnern</button>'+
+    '<button id="calibNever" style="background:none;color:var(--text-dim);border:none;margin-top:6px;font-size:11.5px;">Nicht mehr fragen</button>';
+  openOverlay();
+  function cl(){ closeOverlay(); box.className="summary"; }
+  document.getElementById("calibNow").addEventListener("click", function(){
+    cl(); buildCalibrationExport();
+  });
+  document.getElementById("calibLater").addEventListener("click", cl);
+  document.getElementById("popupX").addEventListener("click", cl);
+  document.getElementById("calibNever").addEventListener("click", function(){
+    S.calibOptOut=true; save(); cl(); toast("Wird nicht mehr gefragt");
+  });
+  return true;
+}
+
 /* ---------- Overlay-Steuerung ---------- */
 var scrollLockY=0;
 function openOverlay(){
@@ -1675,7 +1721,7 @@ function queueCelebrations(list){
 }
 function showNextCelebration(){
   var ov=document.getElementById("overlay");
-  if(celebQueue.length===0){ closeOverlay(); renderAll(); return; }
+  if(celebQueue.length===0){ closeOverlay(); renderAll(); setTimeout(maybeAskCalibration,600); return; }
   var ev=celebQueue.shift();
   var box=document.getElementById("summaryBox");
   var head, sub, colour, action, tier;
@@ -2364,31 +2410,60 @@ document.getElementById("saveProfile").addEventListener("click", function(){
              freq:document.getElementById("pFreq").value||""};
   save(); renderAll(); toast("Profil gespeichert");
 });
-document.getElementById("calibBtn").addEventListener("click", function(){
+function buildCalibrationExport(){
   if(!S.profile){ toast("Erst Profil anlegen"); return; }
   var st=computeStats(), sc=groupScores(), p=S.profile, af=ageFactor(p.age);
   var dates=Object.keys(st.dates).sort();
   /* bestes geschätztes 1RM je Übung, gesamter Zeitraum */
-  var best={}, sets={}, sess={};
+  var best={}, sets={}, sess={}, all1RM={}, med1RM={}, first={}, last={};
   S.entries.forEach(function(e){
     if(e.ex==="run") return;
     var ex=exById(e.ex); if(!ex) return;
     sets[e.ex]=(sets[e.ex]||0)+((e.setList||[]).length);
     sess[e.ex]=(sess[e.ex]||0)+1;
+    if(!first[e.ex]||e.date<first[e.ex]) first[e.ex]=e.date;
+    if(!last[e.ex]||e.date>last[e.ex]) last[e.ex]=e.date;
+    var bestOfEntry=0;
     (e.setList||[]).forEach(function(x){
       var v=est1RM(x.eff,x.reps);
+      if(v>bestOfEntry) bestOfEntry=v;
       if(!best[e.ex]||v>best[e.ex]) best[e.ex]=v;
     });
+    if(bestOfEntry>0) (all1RM[e.ex]=all1RM[e.ex]||[]).push(bestOfEntry);
   });
-  var exOut=[];
-  EX.forEach(function(ex){
-    if(!best[ex.id]) return;
+  Object.keys(all1RM).forEach(function(k){
+    var arr=all1RM[k].slice().sort(function(x,y){return x-y;});
+    med1RM[k]=arr[Math.floor(arr.length/2)];
+  });
+  var exOut=[], inPlan={};
+  EX.forEach(function(e){ inPlan[e.id]=1; });
+  CATALOG.forEach(function(c){
+    if(!best[c.id]) return;                 /* alle je geloggten Übungen, auch entfernte */
+    var ex=exById(c.id);
     var gf = p.gender==="w" ? (ex.genderF||GENDER_F[ex.group]) : 1;
     var bm = ex.bench*p.weight*gf*af;
-    exOut.push({id:ex.id, group:ex.group, sessions:sess[ex.id], sets:sets[ex.id],
-                best1RM:Math.round(best[ex.id]*10)/10,
+    var sc1=best[c.id]/bm;
+    /* Qualitätsmerkmale, damit Ausreißer beim Auswerten erkennbar sind */
+    var flags=[];
+    if(sess[c.id]<3) flags.push("wenige_sessions");
+    if(sc1>3) flags.push("unplausibel_hoch");
+    if(sc1<0.15) flags.push("unplausibel_niedrig");
+    if(all1RM[c.id] && all1RM[c.id].length>=3){
+      var arr=all1RM[c.id].slice().sort(function(x,y){return x-y;});
+      var med=arr[Math.floor(arr.length/2)];
+      if(med>0 && best[c.id]/med>2.5) flags.push("einzelner_ausreisser");
+    }
+    exOut.push({id:ex.id, name:ex.name, group:ex.group,
+                inCurrentPlan:!!inPlan[ex.id],
+                perSide:!!ex.perSide, bodyweightShare:ex.bw||0,
+                sessions:sess[c.id], sets:sets[c.id],
+                best1RM:Math.round(best[c.id]*10)/10,
+                median1RM:med1RM[c.id]!==undefined?Math.round(med1RM[c.id]*10)/10:null,
                 benchmark:Math.round(bm*10)/10,
-                score:Math.round(best[ex.id]/bm*1000)/1000});
+                score:Math.round(sc1*1000)/1000,
+                scoreFromMedian:med1RM[c.id]!==undefined?Math.round(med1RM[c.id]/bm*1000)/1000:null,
+                firstLogged:first[c.id]||null, lastLogged:last[c.id]||null,
+                flags:flags});
   });
   var grpOut=[];
   GROUPS.forEach(function(g){
@@ -2400,12 +2475,23 @@ document.getElementById("calibBtn").addEventListener("click", function(){
     exportedAt:new Date().toISOString(),
     profile:{gender:p.gender, age:p.age, heightCm:p.height||null, weightKg:p.weight,
              experience:p.exp||null, weeklySessions:p.freq||null},
+    plan:{template:S.plan?S.plan.template:null, runTracked:!!(S.plan&&S.plan.run),
+          days:(S.plan?S.plan.days:[]).map(function(d){ return {name:d.name, exercises:d.ex.slice()}; })},
     period:{firstEntry:dates[0]||null, lastEntry:dates[dates.length-1]||null,
             workoutDays:st.workoutDays, weeksActive:Object.keys(st.weekSet).length},
     totals:{totalVolumeKg:Math.round(st.totalVol), runs:st.runCount,
             totalKm:Math.round(st.totalKm*10)/10, level:st.level, totalXP:S.totalXP},
     exercises:exOut,
     groups:grpOut,
+    dataQuality:{
+      exercisesWithFlags:exOut.filter(function(x){return x.flags.length>0;}).length,
+      exercisesTotal:exOut.length,
+      medianSessionsPerExercise:(function(){
+        var v=exOut.map(function(x){return x.sessions;}).sort(function(a,b){return a-b;});
+        return v.length?v[Math.floor(v.length/2)]:0;
+      })(),
+      note:"score = bester Wert, scoreFromMedian = Median aller Sessions. Bei der Auswertung sollte scoreFromMedian bevorzugt werden; flags markieren auffällige Übungen."
+    },
     running:st.bestPace!==null?{bestPaceSecPerKm:Math.round(st.bestPace),
              score:Math.round(runScore(st.bestPace,p.age,p.gender)*1000)/1000}:null
   };
@@ -2415,7 +2501,8 @@ document.getElementById("calibBtn").addEventListener("click", function(){
   a.download="gymlog-kalibrierung-"+today()+".json";
   document.body.appendChild(a); a.click(); a.remove();
   toast("Export erstellt – ohne Namen");
-});
+}
+document.getElementById("calibBtn").addEventListener("click", buildCalibrationExport);
 document.getElementById("exportBtn").addEventListener("click", function(){
   var blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});
   var a=document.createElement("a");
@@ -2430,7 +2517,14 @@ document.getElementById("importFile").addEventListener("change", function(ev){
     try{
       var p=JSON.parse(r.result);
       if(!p.entries){ toast("Ungültige Datei"); return; }
-      S=Object.assign(def(),p); save(); renderAll(); toast("Backup importiert");
+      S=Object.assign(def(),p);
+      if(!S.plan) S.plan=defaultPlan();
+      rebuildEX();
+      UI={open:{}, sets:{}, assist:{}};
+      planDayOpen=null;
+      activeDay=(S.plan.days[0]||{}).id||"run";
+      save(); renderDaySeg(); renderHudTitle(); renderAll();
+      toast("Backup importiert – Plan und Daten wiederhergestellt");
     }catch(e){ toast("Import fehlgeschlagen"); }
   };
   r.readAsText(f);
@@ -2564,7 +2658,7 @@ function renderAll(){
 if(!S.plan) S.plan=defaultPlan();
 rebuildEX();
 if(!S.profile){ switchTab("profile"); toast("Leg zuerst dein Profil an"); }
-else renderAll();
+else { renderAll(); setTimeout(maybeAskCalibration, 1200); }
 })();
 </script>
 </body>
