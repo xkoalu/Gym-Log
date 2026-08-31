@@ -73,7 +73,7 @@
 
   /* ---------- Logo ---------- */
   .applogo{display:flex;align-items:center;justify-content:center;gap:8px;margin:2px 0 -4px;}
-  .applogo .lg-mark{font-size:12px;color:var(--accent);line-height:1;
+  .applogo .lg-mark{width:10px;height:14.5px;flex:none;display:block;fill:var(--accent);
     filter:drop-shadow(0 0 5px var(--accent));}
   .applogo .lg-text{font-family:var(--mono);font-size:13px;letter-spacing:.42em;font-weight:700;
     color:var(--text-dim);text-transform:uppercase;}
@@ -285,6 +285,34 @@
   .league-badge .icon .ic{width:20px;height:20px;color:#04060d;}
   .legend-row .l-ico .ic{width:15px;height:15px;}
 
+
+  /* ---------- Startanimation ---------- */
+  #splash{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
+    background:var(--bg);
+    background-image:radial-gradient(120% 70% at 50% 45%, rgba(79,214,255,.13), transparent 70%);
+    transition:opacity .5s ease, transform .5s ease;}
+  #splash.gone{opacity:0;transform:scale(1.05);pointer-events:none;}
+  .sp-inner{display:flex;flex-direction:column;align-items:center;gap:18px;}
+  .sp-lockup{display:flex;align-items:center;gap:14px;}
+  .sp-mark{width:22px;height:32px;display:block;flex:none;fill:var(--accent);opacity:0;
+    filter:drop-shadow(0 0 12px var(--accent));
+    animation:spMark .6s cubic-bezier(.25,.9,.3,1) .1s forwards;}
+  @keyframes spMark{0%{opacity:0;transform:translateX(-16px);}
+                    60%{opacity:1;}
+                    100%{opacity:1;transform:translateX(0);}}
+  .sp-word{font-family:var(--mono);font-size:27px;font-weight:700;color:var(--text);
+    letter-spacing:.9em;text-indent:.9em;opacity:0;
+    animation:spWord .8s cubic-bezier(.25,0,.15,1) .28s forwards;}
+  .sp-word .sp-dot{color:var(--accent);text-shadow:0 0 14px var(--accent);}
+  @keyframes spWord{0%{opacity:0;letter-spacing:.9em;text-indent:.9em;}
+                    100%{opacity:1;letter-spacing:.3em;text-indent:.3em;}}
+  .sp-line{width:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);
+    animation:spLine .75s ease .8s forwards;}
+  @keyframes spLine{0%{width:0;opacity:0;}40%{opacity:1;}100%{width:210px;opacity:.85;}}
+  @media (prefers-reduced-motion:reduce){
+    .sp-mark,.sp-word,.sp-line{animation:none;opacity:1;letter-spacing:.3em;text-indent:.3em;width:auto;}
+  }
+
   /* ---------- Plan-Editor ---------- */
   .plan-day{background:rgba(10,16,30,.6);border:1px solid var(--border);margin-bottom:7px;padding:10px 11px;
     clip-path:polygon(7px 0,100% 0,calc(100% - 7px) 100%,0 100%);}
@@ -474,7 +502,17 @@
 <body>
 <div class="app">
 
-  <div class="applogo"><span class="lg-mark">▚</span><span class="lg-text">GYM<span class="lg-dot">.</span>LOG</span></div>
+<div id="splash" aria-hidden="true">
+  <div class="sp-inner">
+    <div class="sp-lockup">
+      <svg class="sp-mark" viewBox="0 0 18 26" aria-hidden="true"><rect x="0.6" y="0.6" width="7.6" height="11.6" rx="1"/><rect x="9.8" y="13.8" width="7.6" height="11.6" rx="1"/></svg>
+      <span class="sp-word">GYM<span class="sp-dot">.</span>LOG</span>
+    </div>
+    <div class="sp-line"></div>
+  </div>
+</div>
+
+  <div class="applogo"><svg class="lg-mark" viewBox="0 0 18 26" aria-hidden="true"><rect x="0.6" y="0.6" width="7.6" height="11.6" rx="1"/><rect x="9.8" y="13.8" width="7.6" height="11.6" rx="1"/></svg><span class="lg-text">GYM<span class="lg-dot">.</span>LOG</span></div>
 
   <header class="hud brackets">
     <button class="status-tab" id="statusBtn">STATUS</button>
@@ -1681,6 +1719,23 @@ function checkAchievements(notify){
 }
 
 
+
+
+/* ---------- Startanimation ---------- */
+(function(){
+  var sp=document.getElementById("splash");
+  if(!sp) return;
+  var done=false;
+  function hide(){
+    if(done) return; done=true;
+    sp.classList.add("gone");
+    setTimeout(function(){ if(sp.parentNode) sp.parentNode.removeChild(sp); }, 500);
+  }
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+  setTimeout(hide, reduce ? 350 : 1650);
+  sp.addEventListener("click", hide);      /* antippen überspringt */
+  window.__hideSplash=hide;
+})();
 
 /* ---------- Support & Bestenlisten ---------- */
 var SUPPORT_MAIL="gym.log@outlook.de";
@@ -2977,12 +3032,12 @@ function renderAll(){
 
 if(!S.plan) S.plan=defaultPlan();
 rebuildEX();
-if(!S.profile){ switchTab("profile"); toast("Leg zuerst dein Profil an"); setTimeout(maybeShowInstall, 1500); }
+if(!S.profile){ switchTab("profile"); toast("Leg zuerst dein Profil an"); setTimeout(maybeShowInstall, 2400); }
 else {
   renderAll();
   setTimeout(function(){
     if(!maybeShowInstall()) setTimeout(maybeAskCalibration, 400);
-  }, 900);
+  }, 2100);
 }
 })();
 </script>
