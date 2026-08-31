@@ -1,12 +1,12 @@
 /* GYM.LOG Service Worker
    Bei jeder neuen Version die Zahl in CACHE erhöhen –
    dadurch wird der alte Zwischenspeicher verworfen. */
-var CACHE = "gymlog-v4";
+var CACHE = "gymlog-v5";
 
 var SHELL = [
   "./",
   "./index.html",
-  "./manifest.json",
+  "./manifest.json?v=4",
   "./icon-192.png",
   "./icon-512.png",
   "./icon-maskable-512.png",
