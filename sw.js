@@ -1,10 +1,11 @@
 /* GYM.LOG Service Worker
    Bei jeder neuen Version die Zahl in CACHE erhöhen –
    dadurch wird der alte Zwischenspeicher verworfen. */
-var CACHE = "gymlog-v2";
+var CACHE = "gymlog-v3";
 
 var SHELL = [
-  "./Index.html",
+  "./",
+  "./index.html",
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png",
@@ -49,7 +50,7 @@ self.addEventListener("fetch", function(ev){
         return res;
       }).catch(function(){
         return caches.match(req).then(function(hit){
-          return hit || caches.match("./Index.html");
+          return hit || caches.match("./index.html") || caches.match("./");
         });
       })
     );
