@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Gym.Log">
+<meta name="apple-mobile-web-app-title" content="GYM.LOG">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
 <meta name="theme-color" content="#04060d">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -305,6 +308,31 @@
     clip-path:none;}
   .pick-chips button.on{color:var(--accent);border-color:var(--accent);background:rgba(79,214,255,.12);}
 
+  /* ---------- Bestenlisten ---------- */
+  .lb-head{display:flex;align-items:center;gap:8px;padding:0 9px 6px;
+    font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--text-dim);text-transform:uppercase;}
+  .lb-row{display:flex;align-items:center;gap:8px;padding:8px 9px;margin-bottom:5px;
+    background:rgba(10,16,30,.6);border:1px solid var(--border);
+    clip-path:polygon(6px 0,100% 0,calc(100% - 6px) 100%,0 100%);}
+  .lb-row.me{border-color:var(--accent);background:rgba(79,214,255,.1);}
+  .lb-rank{width:22px;flex:none;font-family:var(--num);font-size:12px;color:var(--text-dim);text-align:center;}
+  .lb-row.me .lb-rank{color:var(--accent);font-weight:700;}
+  .lb-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;}
+  .lb-name{font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .lb-title{font-size:10.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.02em;}
+  .lb-you{font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;color:var(--accent);
+    border:1px solid var(--accent);padding:1px 4px;margin-left:5px;vertical-align:1px;}
+  .lb-lvl{flex:none;font-family:var(--num);font-size:10.5px;color:var(--text-dim);width:44px;text-align:right;}
+  .lb-score{flex:none;font-family:var(--num);font-size:13px;font-weight:700;width:46px;text-align:right;}
+
+  /* ---------- Mail-Knöpfe ---------- */
+  .mailbtn{display:block;margin-top:10px;width:100%;text-align:center;text-decoration:none;
+    background:rgba(4,8,18,.7);border:1px solid var(--border);color:var(--text);
+    font-family:var(--mono);font-weight:700;padding:12px;font-size:12.5px;letter-spacing:.1em;
+    text-transform:uppercase;flex:none;
+    clip-path:polygon(7px 0,100% 0,calc(100% - 7px) 100%,0 100%);}
+  .mailbtn.accent{background:rgba(79,214,255,.16);border-color:var(--accent);color:var(--accent);}
+
   /* ---------- Tab-Leiste ---------- */
   .tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;
     background:rgba(6,10,20,.93);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
@@ -505,6 +533,7 @@
   <div class="tab" id="tab-leagues">
     <section>
       <div class="h2row"><h2>LIGEN PRO MUSKELGRUPPE</h2><button class="info-btn" id="leagueInfoBtn" aria-label="Info">ⓘ</button></div>
+      <button class="save-btn" id="boardBtn" style="margin-bottom:12px;">Bestenlisten ansehen</button>
       <div id="leagueList"></div>
     </section>
   </div>
@@ -523,7 +552,8 @@
       <h2>PROFIL</h2>
       <div class="card">
         <div class="prof-grid">
-          <div class="field wide"><label>NAME</label><input id="pName" type="text" placeholder="Wie sollen wir dich nennen?" maxlength="24"></div>
+          <div class="field wide"><label>NAME (FÜR BESTENLISTEN)</label><input id="pName" type="text" placeholder="Wie sollen wir dich nennen?" maxlength="24"></div>
+          <p class="note" style="grid-column:span 2;margin:-4px 0 0">Dein Name erscheint im Charakterbogen und wird – nur wenn du deine Daten aktiv exportierst und einsendest – für die Bestenlisten verwendet. <b style="color:var(--accent)">Ohne Namen wirst du in den Bestenlisten nicht geführt</b>, alles andere funktioniert trotzdem.</p>
           <div class="field"><label>GESCHLECHT</label>
             <select id="pGender"><option value="m">Männlich</option><option value="w">Weiblich</option></select>
           </div>
@@ -550,7 +580,7 @@
           </div>
         </div>
         <button class="save-btn" id="saveProfile">Profil speichern</button>
-        <p class="note"><b style="color:var(--accent)">Wo deine Daten liegen:</b> Alles wird ausschließlich lokal auf diesem Gerät gespeichert – Profil, jeder geloggte Satz, XP, Erfolge und Titel. Nichts wird automatisch verschickt. Erfahrung und Trainingstage fließen <i>nicht</i> in Ligen oder Erfolge ein; sie dienen nur als Kontext, falls du unten einen Kalibrierungs-Export erzeugst und ihn freiwillig teilst, um die Referenzwerte zu verbessern.</p>
+        <p class="note"><b style="color:var(--accent)">Wo deine Daten liegen:</b> Alles wird ausschließlich lokal auf diesem Gerät gespeichert – Profil, jeder geloggte Satz, XP, Erfolge und Titel. Nichts wird automatisch verschickt. Erfahrung und Trainingstage fließen <i>nicht</i> in Ligen oder Erfolge ein; sie dienen nur als Kontext, falls du unten einen Datenexport erzeugst und ihn freiwillig einsendest – für die Bestenlisten und um die Referenzwerte zu verbessern.</p>
         <p class="note">Körpergewicht, Geschlecht und Alter fließen in die Liga-Bewertung ein. Die Größe wird gespeichert, hat aber auf die Standards kaum Einfluss – Kraftstandards richten sich primär nach dem Körpergewicht. Bei Dips und Pull-ups wird dein Körpergewicht automatisch mitgerechnet – wähle dort „+ Zusatzgewicht" oder „− Unterstützt" (Gegengewicht der Maschine). Für Pull-ups und Dips gelten eigene Frauen-Standards, da diese Übungen für Frauen relativ deutlich schwerer sind (Ø 6 vs. 13 Pull-ups).</p>
       </div>
       <div class="card" style="margin-top:12px;">
@@ -560,8 +590,10 @@
       </div>
       <div class="card" style="margin-top:12px;">
         <div class="chart-title">DATEN</div>
+        <button class="ghost-btn" id="supportBtn">Support &amp; Feedback</button>
+        <button class="ghost-btn" id="installBtn">App installieren</button>
         <button class="ghost-btn" id="exportBtn">Backup exportieren (vollständig)</button>
-        <button class="ghost-btn" id="calibBtn">Kalibrierungs-Export (ohne Namen)</button>
+        <button class="ghost-btn" id="calibBtn">Daten für Bestenliste &amp; Verbesserung</button>
         <label class="ghost-btn" style="display:block;text-align:center;">
           Backup importieren<input id="importFile" type="file" accept=".json" style="display:none;">
         </label>
@@ -588,6 +620,7 @@
 "use strict";
 
 var KEY = "gymlog_v2_state";
+var APP_VERSION = "1.0";
 
 /* ---------- Übungskatalog ----------
    bench = geschätztes 1RM eines durchschnittlich trainierten Mannes als Vielfaches
@@ -768,7 +801,7 @@ var LEAGUES = [
 ];
 
 /* ---------- State ---------- */
-function def(){ return {plan:defaultPlan(), profile:null, calibAsked:0, calibOptOut:false, totalXP:0, streak:0, lastLogDate:null, finishedDates:[], entries:[], lastInputs:{}, leaguePeak:{}, achSeen:{}, titlesSeen:{}, title:null}; }
+function def(){ return {plan:defaultPlan(), profile:null, calibAsked:0, calibOptOut:false, installAsked:0, installOptOut:false, totalXP:0, streak:0, lastLogDate:null, finishedDates:[], entries:[], lastInputs:{}, leaguePeak:{}, achSeen:{}, titlesSeen:{}, title:null}; }
 function load(){
   try{ var r=localStorage.getItem(KEY); if(!r) return def();
     var p=JSON.parse(r); var st=Object.assign(def(), p);
@@ -1646,6 +1679,204 @@ function checkAchievements(notify){
   if(notify && events.length) queueCelebrations(events);
 }
 
+
+
+/* ---------- Support & Bestenlisten ---------- */
+var SUPPORT_MAIL="gym.log@outlook.de";
+function mailto(subject, body){
+  return "mailto:"+SUPPORT_MAIL+"?subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(body);
+}
+function openSupport(){
+  var box=document.getElementById("summaryBox");
+  box.className="summary info";
+  var nm=(S.profile&&S.profile.name)?S.profile.name:"(kein Name angegeben)";
+  var sig="\n\n---\nName: "+nm+"\nApp-Version: "+APP_VERSION+"\n";
+  box.innerHTML=
+    '<button class="popup-x" id="popupX">\u00d7</button>'+
+    '<h3>SUPPORT &amp; FEEDBACK</h3>'+
+    '<div class="info-scroll">'+
+    '<p>Schreib uns an <b style="color:var(--accent)">'+SUPPORT_MAIL+'</b>. Wähle unten aus, worum es geht – die Mail wird mit Betreff vorbereitet.</p>'+
+    '<h4>Daten teilen</h4>'+
+    '<p class="dim">Erzeuge zuerst im Profil unter \u201eDaten für Bestenliste &amp; Verbesserung\u201c die Datei und häng sie an die Mail an. '+
+    'Sie enthält deine Werte pro Übung, deinen Plan und – falls angegeben – deinen Namen für die Bestenliste. Keine Einzeleinträge.</p>'+
+    '</div>'+
+    '<a class="mailbtn" id="mProblem" href="'+mailto("GYM.LOG – Problem melden","Was ist passiert?\n\n\nWas hattest du erwartet?\n\n"+sig)+'">Problem melden</a>'+
+    '<a class="mailbtn" id="mIdee" href="'+mailto("GYM.LOG – Feedback / Idee","Meine Idee oder Rückmeldung:\n\n"+sig)+'">Feedback oder Idee</a>'+
+    '<a class="mailbtn accent" id="mDaten" href="'+mailto("GYM.LOG – Daten teilen","Hallo,\n\nanbei meine Exportdatei für die Bestenliste und zur Verbesserung der Referenzwerte.\n\nDatei angehängt: ja / nein"+sig)+'">Daten einsenden</a>'+
+    '<button id="closeOverlay">Schließen</button>';
+  openOverlay();
+  function cl(){ closeOverlay(); box.className="summary"; }
+  document.getElementById("closeOverlay").addEventListener("click", cl);
+  document.getElementById("popupX").addEventListener("click", cl);
+  ["mProblem","mIdee","mDaten"].forEach(function(id){
+    document.getElementById(id).addEventListener("click", function(){ setTimeout(cl,300); });
+  });
+}
+
+/* ---------- Bestenlisten ----------
+   LEADERBOARD wird mit eingesendeten Daten befüllt.
+   Format je Eintrag: {name, level, score, league}  (league = Index 0–5) */
+var LEADERBOARD={
+  updated:null,
+  entries:[]
+};
+/* Gesamtwertung: Mittel über alle Kategorien mit Daten */
+function overallScore(){
+  var sc=groupScores(); if(!sc) return null;
+  var sum=0,n=0;
+  GROUPS.forEach(function(g){ if(sc[g]!==null&&sc[g]!==undefined){ sum+=sc[g]; n++; } });
+  return n?sum/n:null;
+}
+function myBoardEntry(){
+  var os=overallScore(); if(os===null) return null;
+  var t=S.title?titleById(S.title):null;
+  return {name:(S.profile&&S.profile.name)?S.profile.name:null,
+          level:levelFromXP(S.totalXP).level,
+          title:t?titleName(t):null,
+          titleRarity:t?t.r:null,
+          score:os, league:leagueFor(os).idx, me:true};
+}
+var boardTier=null;
+function openLeaderboard(){
+  var me=myBoardEntry();
+  if(boardTier===null) boardTier = me? me.league : 2;
+  var box=document.getElementById("summaryBox");
+  box.className="summary info";
+  function draw(){
+    var all=LEADERBOARD.entries.slice();
+    if(me && me.name) all.push(me);
+    var tierRows=all.filter(function(x){ return x.league===boardTier; })
+                    .sort(function(a,b){ return b.score-a.score; });
+    var chips='<div class="pick-chips">'+LEAGUES.map(function(L,i){
+      return '<button data-t="'+i+'"'+(boardTier===i?' class="on"':'')+
+             ' style="'+(boardTier===i?'color:'+L.color+';border-color:'+L.color:'')+'">'+L.name+'</button>';
+    }).join("")+'</div>';
+    var rows="";
+    if(tierRows.length===0){
+      rows='<div class="t-empty">Für die '+LEAGUES[boardTier].name+'-Liga liegen noch keine Einträge vor.</div>';
+    } else {
+      rows=tierRows.map(function(x,i){
+        var tCol = x.titleRarity && RARITY[x.titleRarity] ? RARITY[x.titleRarity].color : "var(--text-dim)";
+        var tHtml = x.title ? '<span class="lb-title'+(x.titleRarity==="sonder"?" shimmer":"")+'"'+
+                    (x.titleRarity==="sonder"?"":' style="color:'+tCol+'"')+'>'+x.title+'</span>' : '';
+        return '<div class="lb-row'+(x.me?" me":"")+'">'+
+          '<span class="lb-rank">'+(i+1)+'</span>'+
+          '<span class="lb-main"><span class="lb-name">'+(x.name||"–")+(x.me?' <span class="lb-you">du</span>':'')+'</span>'+tHtml+'</span>'+
+          '<span class="lb-lvl">Lv '+x.level+'</span>'+
+          '<span class="lb-score" style="color:'+LEAGUES[x.league].color+'">'+x.score.toFixed(2).replace(".",",")+'</span>'+
+          '</div>';
+      }).join("");
+    }
+    var hint="";
+    if(me && !me.name) hint='<p class="dim" style="margin-top:10px">Du wirst noch nicht geführt – trag im Profil einen Namen ein und sende deine Daten über <b style="color:var(--accent)">Support &amp; Feedback</b> ein.</p>';
+    else if(me) hint='<p class="dim" style="margin-top:10px">Dein Wert wird lokal berechnet. Damit andere ihn sehen, sende deine Daten über <b style="color:var(--accent)">Support &amp; Feedback</b> ein.</p>';
+    var stand=LEADERBOARD.updated?('<p class="dim" style="margin-top:8px">Stand der eingesendeten Daten: '+LEADERBOARD.updated+'</p>'):"";
+    box.innerHTML='<button class="popup-x" id="popupX">\u00d7</button>'+
+      '<h3>BESTENLISTEN</h3>'+chips+
+      '<div class="info-scroll">'+
+      '<div class="lb-head"><span class="lb-rank">#</span><span class="lb-main">Name &amp; Titel</span>'+
+      '<span class="lb-lvl">Level</span><span class="lb-score">Wertung</span></div>'+
+      rows+hint+stand+'</div>'+
+      '<button id="closeOverlay">Schließen</button>';
+    box.querySelectorAll(".pick-chips button").forEach(function(b){
+      b.addEventListener("click", function(){ boardTier=parseInt(b.getAttribute("data-t"),10); draw(); });
+    });
+    function cl(){ closeOverlay(); box.className="summary"; }
+    document.getElementById("closeOverlay").addEventListener("click", cl);
+    document.getElementById("popupX").addEventListener("click", cl);
+  }
+  draw();
+  openOverlay();
+}
+
+/* ---------- Installation / Anzeigemodus ---------- */
+var deferredInstall=null;
+window.addEventListener("beforeinstallprompt", function(ev){
+  ev.preventDefault(); deferredInstall=ev;
+});
+function isStandalone(){
+  return window.navigator.standalone===true ||
+         (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+         (window.matchMedia && window.matchMedia("(display-mode: fullscreen)").matches);
+}
+function platformInfo(){
+  var ua=navigator.userAgent||"";
+  var iOS=/iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints>1);
+  var android=/Android/.test(ua);
+  /* Auf iOS nutzen alle Browser dieselbe Engine, aber nur Safari kann installieren */
+  var iosSafari = iOS && !/CriOS|FxiOS|EdgiOS|OPiOS|YaBrowser/.test(ua);
+  return {iOS:iOS, android:android, iosSafari:iosSafari,
+          desktop:!iOS && !android};
+}
+function installHTML(){
+  var p=platformInfo();
+  var wo='<p class="dim" style="margin-top:12px">Du findest diese Anleitung jederzeit wieder im Profil unter <b style="color:var(--accent)">App installieren</b>.</p>';
+  if(p.iOS && p.iosSafari){
+    return '<p>GYM.LOG läuft im Vollbild wie eine echte App, wenn du sie zum Home-Bildschirm hinzufügst – ohne Adressleiste, mit eigenem Icon, auch ohne Internet.</p>'+
+      '<h4>So geht\u2019s</h4>'+
+      '<p><b>1.</b> Tippe unten in der Leiste auf das Teilen-Symbol</p>'+
+      '<p><b>2.</b> Wische nach unten zu <b>\u201eZum Home-Bildschirm\u201c</b></p>'+
+      '<p><b>3.</b> Oben rechts auf <b>\u201eHinzufügen\u201c</b></p>'+
+      '<p class="dim" style="margin-top:10px">Deine Daten bleiben dabei erhalten.</p>'+wo;
+  }
+  if(p.iOS){
+    return '<p>Zum Installieren brauchst du Safari – Apple erlaubt das Hinzufügen zum Home-Bildschirm nur dort.</p>'+
+      '<p>Kopiere die Adresse dieser Seite, öffne sie in Safari und tippe dann auf Teilen \u2192 \u201eZum Home-Bildschirm\u201c.</p>'+
+      '<h4>Wichtig</h4>'+
+      '<p class="dim">Deine bisher hier geloggten Daten wandern nicht automatisch mit, da jeder Browser getrennt speichert. Exportiere vorher im Profil ein Backup und importiere es in Safari.</p>'+wo;
+  }
+  if(p.android){
+    return '<p>GYM.LOG läuft im Vollbild wie eine echte App, wenn du sie installierst – ohne Adressleiste, mit eigenem Icon, auch ohne Internet.</p>'+
+      '<p class="dim" style="margin-top:10px">Falls der Knopf unten nicht reagiert: Menü \u22ee oben rechts \u2192 <b>\u201eApp installieren\u201c</b>.</p>'+wo;
+  }
+  return '<p>Du kannst GYM.LOG als Fenster-App installieren: Klicke rechts in der Adressleiste auf das Installations-Symbol, oder öffne das Browser-Menü \u2192 <b>\u201eGYM.LOG installieren\u201c</b>.</p>'+wo;
+}
+function openInstallInfo(forced){
+  var p=platformInfo();
+  var box=document.getElementById("summaryBox");
+  box.className="summary info";
+  var btn = (p.android && deferredInstall)
+    ? '<button id="doInstall">Jetzt installieren</button>'
+    : '<button id="closeOverlay">Alles klar</button>';
+  var extra = forced ? "" :
+    '<button id="instLater" style="background:rgba(4,8,18,.7);color:var(--text);border-color:var(--border);margin-top:8px;">Ignorieren</button>'+
+    '<button id="instNever" style="background:none;color:var(--text-dim);border:none;margin-top:6px;font-size:11.5px;">Nicht mehr anzeigen</button>';
+  box.innerHTML='<button class="popup-x" id="popupX">\u00d7</button>'+
+    '<h3>APP INSTALLIEREN</h3>'+
+    '<div class="info-scroll">'+installHTML()+'</div>'+btn+extra;
+  openOverlay();
+  function cl(){ closeOverlay(); box.className="summary"; }
+  var di=document.getElementById("doInstall");
+  if(di) di.addEventListener("click", function(){
+    if(deferredInstall){
+      deferredInstall.prompt();
+      deferredInstall.userChoice.then(function(){ deferredInstall=null; cl(); });
+    } else cl();
+  });
+  var co=document.getElementById("closeOverlay");
+  if(co) co.addEventListener("click", cl);
+  document.getElementById("popupX").addEventListener("click", cl);
+  var lt=document.getElementById("instLater");
+  if(lt) lt.addEventListener("click", function(){ S.installAsked=Date.now(); save(); cl(); });
+  var nv=document.getElementById("instNever");
+  if(nv) nv.addEventListener("click", function(){ S.installOptOut=true; save(); cl(); toast("Wird nicht mehr angezeigt"); });
+}
+function maybeShowInstall(){
+  if(isStandalone()) return false;
+  if(S.installOptOut) return false;
+  if(S.installAsked && Date.now()-S.installAsked < 7*86400000) return false;
+  S.installAsked=Date.now(); save();
+  openInstallInfo(false);
+  return true;
+}
+
+/* Service Worker registrieren */
+if("serviceWorker" in navigator && location.protocol==="https:"){
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("./sw.js").catch(function(){});
+  });
+}
+
 /* ---------- Kalibrierungs-Erinnerung ---------- */
 function maybeAskCalibration(){
   if(!S.profile || S.calibOptOut) return false;
@@ -2473,6 +2704,10 @@ function buildCalibrationExport(){
   var data={
     schema:"gymlog-calib-1",
     exportedAt:new Date().toISOString(),
+    displayName:(p.name||"")||null,
+    leaderboardEligible:!!(p.name||"").trim(),
+    displayTitle:(function(){ var t=S.title?titleById(S.title):null;
+      return t?{name:titleName(t), rarity:t.r}:null; })(),
     profile:{gender:p.gender, age:p.age, heightCm:p.height||null, weightKg:p.weight,
              experience:p.exp||null, weeklySessions:p.freq||null},
     plan:{template:S.plan?S.plan.template:null, runTracked:!!(S.plan&&S.plan.run),
@@ -2498,11 +2733,14 @@ function buildCalibrationExport(){
   var blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
   var a=document.createElement("a");
   a.href=URL.createObjectURL(blob);
-  a.download="gymlog-kalibrierung-"+today()+".json";
+  a.download="gymlog-daten-"+today()+".json";
   document.body.appendChild(a); a.click(); a.remove();
-  toast("Export erstellt – ohne Namen");
+  toast((S.profile.name?"Export erstellt – mit Name":"Export erstellt – ohne Name"));
 }
 document.getElementById("calibBtn").addEventListener("click", buildCalibrationExport);
+document.getElementById("installBtn").addEventListener("click", function(){ openInstallInfo(true); });
+document.getElementById("supportBtn").addEventListener("click", openSupport);
+document.getElementById("boardBtn").addEventListener("click", openLeaderboard);
 document.getElementById("exportBtn").addEventListener("click", function(){
   var blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});
   var a=document.createElement("a");
@@ -2657,8 +2895,13 @@ function renderAll(){
 
 if(!S.plan) S.plan=defaultPlan();
 rebuildEX();
-if(!S.profile){ switchTab("profile"); toast("Leg zuerst dein Profil an"); }
-else { renderAll(); setTimeout(maybeAskCalibration, 1200); }
+if(!S.profile){ switchTab("profile"); toast("Leg zuerst dein Profil an"); setTimeout(maybeShowInstall, 1500); }
+else {
+  renderAll();
+  setTimeout(function(){
+    if(!maybeShowInstall()) setTimeout(maybeAskCalibration, 400);
+  }, 900);
+}
 })();
 </script>
 </body>
