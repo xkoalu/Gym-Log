@@ -309,21 +309,22 @@
   .pick-chips button.on{color:var(--accent);border-color:var(--accent);background:rgba(79,214,255,.12);}
 
   /* ---------- Bestenlisten ---------- */
-  .lb-head{display:flex;align-items:center;gap:8px;padding:0 9px 6px;
+  .lb-head{display:flex;align-items:center;gap:6px;padding:0 9px 6px;
     font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--text-dim);text-transform:uppercase;}
-  .lb-row{display:flex;align-items:center;gap:8px;padding:8px 9px;margin-bottom:5px;
+  .lb-row{display:flex;align-items:center;gap:6px;padding:8px 9px;margin-bottom:5px;
     background:rgba(10,16,30,.6);border:1px solid var(--border);
     clip-path:polygon(6px 0,100% 0,calc(100% - 6px) 100%,0 100%);}
   .lb-row.me{border-color:var(--accent);background:rgba(79,214,255,.1);}
-  .lb-rank{width:22px;flex:none;font-family:var(--num);font-size:12px;color:var(--text-dim);text-align:center;}
+  .lb-rank{width:18px;flex:none;font-family:var(--num);font-size:12px;color:var(--text-dim);text-align:center;}
   .lb-row.me .lb-rank{color:var(--accent);font-weight:700;}
   .lb-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;}
   .lb-name{font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .lb-title{font-size:10.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.02em;}
   .lb-you{font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;color:var(--accent);
     border:1px solid var(--accent);padding:1px 4px;margin-left:5px;vertical-align:1px;}
-  .lb-lvl{flex:none;font-family:var(--num);font-size:10.5px;color:var(--text-dim);width:44px;text-align:right;}
-  .lb-score{flex:none;font-family:var(--num);font-size:13px;font-weight:700;width:46px;text-align:right;}
+  .lb-lg{flex:none;font-family:var(--mono);font-size:9px;letter-spacing:.06em;width:48px;text-align:right;text-transform:uppercase;}
+  .lb-lvl{flex:none;font-family:var(--num);font-size:10.5px;color:var(--text-dim);width:40px;text-align:right;}
+  .lb-score{flex:none;font-family:var(--num);font-size:12.5px;font-weight:700;width:40px;text-align:right;}
 
   /* ---------- Mail-Knöpfe ---------- */
   .mailbtn{display:block;margin-top:10px;width:100%;text-align:center;text-decoration:none;
@@ -1715,7 +1716,9 @@ function openSupport(){
 
 /* ---------- Bestenlisten ----------
    LEADERBOARD wird mit eingesendeten Daten befüllt.
-   Format je Eintrag: {name, level, score, league}  (league = Index 0–5) */
+   Format je Eintrag:
+   {name, level, title, titleRarity, overall, groups:{Brust:1.1, Rücken:0.9, ...}}
+   overall = Mittelwert über die vorhandenen Kategorien */
 var LEADERBOARD={
   updated:null,
   entries:[]
@@ -1728,58 +1731,84 @@ function overallScore(){
   return n?sum/n:null;
 }
 function myBoardEntry(){
-  var os=overallScore(); if(os===null) return null;
+  var sc=groupScores(); if(!sc) return null;
+  var os=overallScore();
   var t=S.title?titleById(S.title):null;
   return {name:(S.profile&&S.profile.name)?S.profile.name:null,
           level:levelFromXP(S.totalXP).level,
           title:t?titleName(t):null,
           titleRarity:t?t.r:null,
-          score:os, league:leagueFor(os).idx, me:true};
+          overall:os,
+          groups:(function(){ var g={}; GROUPS.forEach(function(k){ if(sc[k]!==null&&sc[k]!==undefined) g[k]=sc[k]; }); return g; })(),
+          me:true};
 }
-var boardTier=null;
+
+/* Ansicht: "gesamt" oder eine Muskelgruppe */
+var boardView="gesamt";
 function openLeaderboard(){
   var me=myBoardEntry();
-  if(boardTier===null) boardTier = me? me.league : 2;
   var box=document.getElementById("summaryBox");
   box.className="summary info";
-  function draw(){
+
+  function rowsFor(view){
     var all=LEADERBOARD.entries.slice();
     if(me && me.name) all.push(me);
-    var tierRows=all.filter(function(x){ return x.league===boardTier; })
-                    .sort(function(a,b){ return b.score-a.score; });
-    var chips='<div class="pick-chips">'+LEAGUES.map(function(L,i){
-      return '<button data-t="'+i+'"'+(boardTier===i?' class="on"':'')+
-             ' style="'+(boardTier===i?'color:'+L.color+';border-color:'+L.color:'')+'">'+L.name+'</button>';
+    var out=[];
+    all.forEach(function(x){
+      var v = view==="gesamt" ? x.overall : (x.groups? x.groups[view] : undefined);
+      if(v===null||v===undefined) return;
+      out.push({name:x.name, level:x.level, title:x.title, titleRarity:x.titleRarity,
+                score:v, league:leagueFor(v).idx, me:!!x.me});
+    });
+    return out.sort(function(a,b){ return b.score-a.score; });
+  }
+
+  function draw(){
+    var views=["gesamt"].concat(GROUPS);
+    var chips='<div class="pick-chips">'+views.map(function(v){
+      var lbl = v==="gesamt" ? "Gesamt" : v;
+      var col = v==="gesamt" ? "var(--accent)" : GROUP_COLORS[v];
+      return '<button data-v="'+v+'"'+(boardView===v?' class="on"':'')+
+             ' style="'+(boardView===v?'color:'+col+';border-color:'+col:'')+'">'+lbl+'</button>';
     }).join("")+'</div>';
+
+    var list=rowsFor(boardView);
     var rows="";
-    if(tierRows.length===0){
-      rows='<div class="t-empty">Für die '+LEAGUES[boardTier].name+'-Liga liegen noch keine Einträge vor.</div>';
+    if(list.length===0){
+      rows='<div class="t-empty">Für '+(boardView==="gesamt"?"die Gesamtwertung":boardView)+' liegen noch keine Einträge vor.</div>';
     } else {
-      rows=tierRows.map(function(x,i){
+      rows=list.map(function(x,i){
+        var L=LEAGUES[x.league];
         var tCol = x.titleRarity && RARITY[x.titleRarity] ? RARITY[x.titleRarity].color : "var(--text-dim)";
         var tHtml = x.title ? '<span class="lb-title'+(x.titleRarity==="sonder"?" shimmer":"")+'"'+
                     (x.titleRarity==="sonder"?"":' style="color:'+tCol+'"')+'>'+x.title+'</span>' : '';
         return '<div class="lb-row'+(x.me?" me":"")+'">'+
           '<span class="lb-rank">'+(i+1)+'</span>'+
           '<span class="lb-main"><span class="lb-name">'+(x.name||"–")+(x.me?' <span class="lb-you">du</span>':'')+'</span>'+tHtml+'</span>'+
+          '<span class="lb-lg" style="color:'+L.color+'">'+L.name+'</span>'+
           '<span class="lb-lvl">Lv '+x.level+'</span>'+
-          '<span class="lb-score" style="color:'+LEAGUES[x.league].color+'">'+x.score.toFixed(2).replace(".",",")+'</span>'+
+          '<span class="lb-score" style="color:'+L.color+'">'+x.score.toFixed(2).replace(".",",")+'</span>'+
           '</div>';
       }).join("");
     }
+
+    var explain = boardView==="gesamt"
+      ? '<p class="dim" style="margin-top:10px">Die Gesamtwertung ist der Mittelwert über alle Kategorien mit Daten – sie belohnt ausgewogenes Training.</p>'
+      : '<p class="dim" style="margin-top:10px">Gewertet wird ausschließlich dein Score in der Kategorie '+boardView+'.</p>';
     var hint="";
-    if(me && !me.name) hint='<p class="dim" style="margin-top:10px">Du wirst noch nicht geführt – trag im Profil einen Namen ein und sende deine Daten über <b style="color:var(--accent)">Support &amp; Feedback</b> ein.</p>';
-    else if(me) hint='<p class="dim" style="margin-top:10px">Dein Wert wird lokal berechnet. Damit andere ihn sehen, sende deine Daten über <b style="color:var(--accent)">Support &amp; Feedback</b> ein.</p>';
-    var stand=LEADERBOARD.updated?('<p class="dim" style="margin-top:8px">Stand der eingesendeten Daten: '+LEADERBOARD.updated+'</p>'):"";
+    if(me && !me.name) hint='<p class="dim">Du wirst noch nicht geführt – trag im Profil einen Namen ein und sende deine Daten über <b style="color:var(--accent)">Support &amp; Feedback</b> ein.</p>';
+    else if(me) hint='<p class="dim">Dein Wert wird lokal berechnet. Damit andere ihn sehen, sende deine Daten über <b style="color:var(--accent)">Support &amp; Feedback</b> ein.</p>';
+    var stand=LEADERBOARD.updated?('<p class="dim">Stand der eingesendeten Daten: '+LEADERBOARD.updated+'</p>'):"";
+
     box.innerHTML='<button class="popup-x" id="popupX">\u00d7</button>'+
       '<h3>BESTENLISTEN</h3>'+chips+
       '<div class="info-scroll">'+
       '<div class="lb-head"><span class="lb-rank">#</span><span class="lb-main">Name &amp; Titel</span>'+
-      '<span class="lb-lvl">Level</span><span class="lb-score">Wertung</span></div>'+
-      rows+hint+stand+'</div>'+
+      '<span class="lb-lg">Liga</span><span class="lb-lvl">Level</span><span class="lb-score">Wert</span></div>'+
+      rows+explain+hint+stand+'</div>'+
       '<button id="closeOverlay">Schließen</button>';
     box.querySelectorAll(".pick-chips button").forEach(function(b){
-      b.addEventListener("click", function(){ boardTier=parseInt(b.getAttribute("data-t"),10); draw(); });
+      b.addEventListener("click", function(){ boardView=b.getAttribute("data-v"); draw(); });
     });
     function cl(){ closeOverlay(); box.className="summary"; }
     document.getElementById("closeOverlay").addEventListener("click", cl);
@@ -2708,6 +2737,12 @@ function buildCalibrationExport(){
     leaderboardEligible:!!(p.name||"").trim(),
     displayTitle:(function(){ var t=S.title?titleById(S.title):null;
       return t?{name:titleName(t), rarity:t.r}:null; })(),
+    leaderboard:(function(){
+      var e=myBoardEntry(); if(!e) return null;
+      return {level:e.level, overall:e.overall===null?null:Math.round(e.overall*1000)/1000,
+              groups:(function(){ var g={}; Object.keys(e.groups).forEach(function(k){
+                g[k]=Math.round(e.groups[k]*1000)/1000; }); return g; })()};
+    })(),
     profile:{gender:p.gender, age:p.age, heightCm:p.height||null, weightKg:p.weight,
              experience:p.exp||null, weeklySessions:p.freq||null},
     plan:{template:S.plan?S.plan.template:null, runTracked:!!(S.plan&&S.plan.run),
