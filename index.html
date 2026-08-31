@@ -1763,17 +1763,35 @@ function openLeaderboard(){
     return out.sort(function(a,b){ return b.score-a.score; });
   }
 
-  function draw(){
-    var views=["gesamt"].concat(GROUPS);
-    var chips='<div class="pick-chips">'+views.map(function(v){
-      var lbl = v==="gesamt" ? "Gesamt" : v;
-      var col = v==="gesamt" ? "var(--accent)" : GROUP_COLORS[v];
-      return '<button data-v="'+v+'"'+(boardView===v?' class="on"':'')+
-             ' style="'+(boardView===v?'color:'+col+';border-color:'+col:'')+'">'+lbl+'</button>';
-    }).join("")+'</div>';
+  var views=["gesamt"].concat(GROUPS);
+  function viewColor(v){ return v==="gesamt" ? "var(--accent)" : GROUP_COLORS[v]; }
 
-    var list=rowsFor(boardView);
-    var rows="";
+  /* Fenster einmal aufbauen – danach wird nur noch die Liste ausgetauscht */
+  box.innerHTML='<button class="popup-x" id="popupX">\u00d7</button>'+
+    '<h3>BESTENLISTEN</h3>'+
+    '<div class="pick-chips" id="lbChips">'+views.map(function(v){
+      return '<button data-v="'+v+'">'+(v==="gesamt"?"Gesamt":v)+'</button>';
+    }).join("")+'</div>'+
+    '<div class="info-scroll" id="lbScroll">'+
+    '<div class="lb-head"><span class="lb-rank">#</span><span class="lb-main">Name &amp; Titel</span>'+
+    '<span class="lb-lg">Liga</span><span class="lb-lvl">Level</span><span class="lb-score">Wert</span></div>'+
+    '<div id="lbList"></div></div>'+
+    '<button id="closeOverlay">Schließen</button>';
+
+  var chipEls=[], listEl=document.getElementById("lbList");
+  var chipBox=document.getElementById("lbChips");
+  var pending=false;
+
+  function paint(){
+    pending=false;
+    /* Chips markieren, ohne sie neu zu erzeugen */
+    chipEls.forEach(function(b){
+      var v=b.getAttribute("data-v"), on=(v===boardView);
+      b.className = on ? "on" : "";
+      b.style.color = on ? viewColor(v) : "";
+      b.style.borderColor = on ? viewColor(v) : "";
+    });
+    var list=rowsFor(boardView), rows="";
     if(list.length===0){
       rows='<div class="t-empty">Für '+(boardView==="gesamt"?"die Gesamtwertung":boardView)+' liegen noch keine Einträge vor.</div>';
     } else {
@@ -1791,7 +1809,6 @@ function openLeaderboard(){
           '</div>';
       }).join("");
     }
-
     var explain = boardView==="gesamt"
       ? '<p class="dim" style="margin-top:10px">Die Gesamtwertung ist der Mittelwert über alle Kategorien mit Daten – sie belohnt ausgewogenes Training.</p>'
       : '<p class="dim" style="margin-top:10px">Gewertet wird ausschließlich dein Score in der Kategorie '+boardView+'.</p>';
@@ -1799,22 +1816,27 @@ function openLeaderboard(){
     if(me && !me.name) hint='<p class="dim">Du wirst noch nicht geführt – trag im Profil einen Namen ein und sende deine Daten über <b style="color:var(--accent)">Support &amp; Feedback</b> ein.</p>';
     else if(me) hint='<p class="dim">Dein Wert wird lokal berechnet. Damit andere ihn sehen, sende deine Daten über <b style="color:var(--accent)">Support &amp; Feedback</b> ein.</p>';
     var stand=LEADERBOARD.updated?('<p class="dim">Stand der eingesendeten Daten: '+LEADERBOARD.updated+'</p>'):"";
-
-    box.innerHTML='<button class="popup-x" id="popupX">\u00d7</button>'+
-      '<h3>BESTENLISTEN</h3>'+chips+
-      '<div class="info-scroll">'+
-      '<div class="lb-head"><span class="lb-rank">#</span><span class="lb-main">Name &amp; Titel</span>'+
-      '<span class="lb-lg">Liga</span><span class="lb-lvl">Level</span><span class="lb-score">Wert</span></div>'+
-      rows+explain+hint+stand+'</div>'+
-      '<button id="closeOverlay">Schließen</button>';
-    box.querySelectorAll(".pick-chips button").forEach(function(b){
-      b.addEventListener("click", function(){ boardView=b.getAttribute("data-v"); draw(); });
-    });
-    function cl(){ closeOverlay(); box.className="summary"; }
-    document.getElementById("closeOverlay").addEventListener("click", cl);
-    document.getElementById("popupX").addEventListener("click", cl);
+    listEl.innerHTML=rows+explain+hint+stand;
   }
-  draw();
+  /* mehrere schnelle Taps werden zu einem Neuzeichnen zusammengefasst */
+  function schedule(){
+    if(pending) return;
+    pending=true;
+    if(window.requestAnimationFrame) requestAnimationFrame(paint); else setTimeout(paint,16);
+  }
+
+  chipBox.querySelectorAll("button").forEach(function(b){
+    chipEls.push(b);
+    b.addEventListener("click", function(){
+      var v=b.getAttribute("data-v");
+      if(v===boardView) return;       /* gleiche Ansicht: nichts tun */
+      boardView=v; schedule();
+    });
+  });
+  function cl(){ closeOverlay(); box.className="summary"; }
+  document.getElementById("closeOverlay").addEventListener("click", cl);
+  document.getElementById("popupX").addEventListener("click", cl);
+  paint();
   openOverlay();
 }
 
@@ -2396,12 +2418,28 @@ function openPicker(day){
   pickerQuery=""; pickerGroup="";
   var box=document.getElementById("summaryBox");
   box.className="summary info";
-  function draw(){
-    var q=pickerQuery.trim().toLowerCase();
-    var groups=["Brust","Rücken","Schultern","Arme","Beine","Bauch"];
-    var chips='<div class="pick-chips"><button data-g=""'+(pickerGroup===""?' class="on"':'')+'>Alle</button>'+
-      groups.map(function(g){ return '<button data-g="'+g+'"'+(pickerGroup===g?' class="on"':'')+'>'+g+'</button>'; }).join("")+'</div>';
-    var rows="", last=null, shown=0;
+  var groups=["Brust","Rücken","Schultern","Arme","Beine","Bauch"];
+
+  box.innerHTML='<button class="popup-x" id="popupX">\u00d7</button>'+
+    '<h3>ÜBUNG WÄHLEN</h3>'+
+    '<input id="pickSearch" class="t-search" type="text" placeholder="Übung suchen\u2026">'+
+    '<div class="pick-chips" id="pickChips"><button data-g="">Alle</button>'+
+      groups.map(function(g){ return '<button data-g="'+g+'">'+g+'</button>'; }).join("")+'</div>'+
+    '<div class="info-scroll" id="pickList"></div>'+
+    '<button id="closeOverlay">Fertig</button>';
+
+  var listEl=document.getElementById("pickList");
+  var chipEls=[], pending=false;
+
+  function paint(){
+    pending=false;
+    chipEls.forEach(function(b){
+      var g=b.getAttribute("data-g"), on=(g===pickerGroup);
+      b.className = on ? "on" : "";
+      b.style.color = on ? (g?GROUP_COLORS[g]:"var(--accent)") : "";
+      b.style.borderColor = on ? (g?GROUP_COLORS[g]:"var(--accent)") : "";
+    });
+    var q=pickerQuery.trim().toLowerCase(), rows="", last=null, shown=0;
     CATALOG.forEach(function(c){
       if(pickerGroup && c.g!==pickerGroup) return;
       if(q && c.n.toLowerCase().indexOf(q)===-1) return;
@@ -2412,28 +2450,37 @@ function openPicker(day){
       shown++;
     });
     if(!shown) rows='<div class="t-empty">Keine Übung gefunden.</div>';
-    box.innerHTML='<button class="popup-x" id="popupX">\u00d7</button>'+
-      '<h3>ÜBUNG WÄHLEN</h3>'+
-      '<input id="pickSearch" class="t-search" type="text" placeholder="Übung suchen\u2026" value="'+pickerQuery.replace(/"/g,"&quot;")+'">'+
-      chips+'<div class="info-scroll" id="pickList">'+rows+'</div>'+
-      '<button id="closeOverlay">Fertig</button>';
-    var si=document.getElementById("pickSearch");
-    si.addEventListener("input", function(ev){ pickerQuery=ev.target.value; draw(); si.focus(); });
-    box.querySelectorAll(".pick-chips button").forEach(function(b){
-      b.addEventListener("click", function(){ pickerGroup=b.getAttribute("data-g"); draw(); });
-    });
-    box.querySelectorAll("#pickList .t-row[data-id]").forEach(function(r){
+    listEl.innerHTML=rows;
+    listEl.querySelectorAll(".t-row[data-id]").forEach(function(r){
       r.addEventListener("click", function(){
         var id=r.getAttribute("data-id");
         var i=day.ex.indexOf(id);
         if(i===-1) day.ex.push(id); else day.ex.splice(i,1);
-        rebuildEX(); save(); draw(); renderPlanEditor(); renderExList();
+        rebuildEX(); save(); schedule(); renderPlanEditor(); renderExList();
       });
     });
-    document.getElementById("closeOverlay").addEventListener("click", function(){ closeOverlay(); box.className="summary"; });
-    document.getElementById("popupX").addEventListener("click", function(){ closeOverlay(); box.className="summary"; });
   }
-  draw();
+  function schedule(){
+    if(pending) return;
+    pending=true;
+    if(window.requestAnimationFrame) requestAnimationFrame(paint); else setTimeout(paint,16);
+  }
+
+  document.getElementById("pickSearch").addEventListener("input", function(ev){
+    pickerQuery=ev.target.value; schedule();
+  });
+  document.getElementById("pickChips").querySelectorAll("button").forEach(function(b){
+    chipEls.push(b);
+    b.addEventListener("click", function(){
+      var g=b.getAttribute("data-g");
+      if(g===pickerGroup) return;
+      pickerGroup=g; schedule();
+    });
+  });
+  function cl(){ closeOverlay(); box.className="summary"; }
+  document.getElementById("closeOverlay").addEventListener("click", cl);
+  document.getElementById("popupX").addEventListener("click", cl);
+  paint();
   openOverlay();
 }
 
