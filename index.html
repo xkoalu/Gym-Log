@@ -994,18 +994,25 @@ function computeStats(){
     if(run3>max3) max3=run3;
   }
   st.streak3x=max3;
-  /* Utopische Gewichte: geschätztes Maximum über dem 3-fachen Durchschnitt */
+  /* Utopische Gewichte: geschätztes Maximum über dem 3-fachen Durchschnitt.
+     Gezählt wird pro Tag – vereinzelte Tippfehler über Monate hinweg zählen nicht. */
   st.absurdExCount=0;
   if(S.profile){
     var pf=S.profile, afx=ageFactor(pf.age);
-    var seen={};
+    var perDay={};
     S.entries.forEach(function(e){
-      if(e.ex==="run" || seen[e.ex]) return;
+      if(e.ex==="run") return;
       var ex=exById(e.ex); if(!ex || !ex.bench) return;
       var gf = pf.gender==="w" ? (ex.genderF || GENDER_F[ex.group] || 1) : 1;
       var benchmark = ex.bench * pf.weight * gf * afx;
       var mx=0; (e.setList||[]).forEach(function(sx){ var v=est1RM(sx.eff,sx.reps); if(v>mx) mx=v; });
-      if(benchmark>0 && mx > benchmark*3){ seen[e.ex]=1; st.absurdExCount++; }
+      if(benchmark>0 && mx > benchmark*3){
+        (perDay[e.date]=perDay[e.date]||{})[e.ex]=1;
+      }
+    });
+    Object.keys(perDay).forEach(function(d){
+      var n=Object.keys(perDay[d]).length;
+      if(n>st.absurdExCount) st.absurdExCount=n;
     });
   }
   st.bestLeague=function(){
@@ -1339,7 +1346,7 @@ var TITLES = [
   {id:"fabulier",   r:"beruecht",m:"Der Fabulierer",     w:"Die Fabuliererin",    d:function(){return "Level künstlich aufgebläht – dieselbe Übung 3× an einem Tag oder mehr als 3 volle Programme";}, f:function(st){return st.maxProgramsPerDay>3 || st.maxSameExPerDay>=3;}},
   {id:"zahlendreh", r:"beruecht",m:"Zahlendreher",       w:"Zahlendreherin",      d:function(){return "Ein Satz weit über dem Bestwert – und nie wieder in die Nähe gekommen";}, f:function(st){return st.outlier;}},
   {id:"halbherzig", r:"beruecht",m:"Der Halbherzige",    w:"Die Halbherzige",     d:function(){return "5× ein Workout abgeschlossen, ohne alle Übungen zu loggen";}, f:function(st){return st.unfinishedDays>=5;}},
-  {id:"aufschneid", r:"beruecht",m:"Der Aufschneider",   w:"Die Aufschneiderin",  d:function(){return "Bei 3 verschiedenen Übungen Gewichte weit jenseits des Menschenmöglichen eingetragen";}, f:function(st){return st.absurdExCount>=3;}}
+  {id:"aufschneid", r:"beruecht",m:"Der Aufschneider",   w:"Die Aufschneiderin",  d:function(){return "An einem Tag bei 3 verschiedenen Übungen Gewichte weit jenseits des Menschenmöglichen eingetragen";}, f:function(st){return st.absurdExCount>=3;}}
 ];
 function titleName(t){ return (S.profile&&S.profile.gender==="w")?t.w:t.m; }
 function titleById(id){ for(var i=0;i<TITLES.length;i++) if(TITLES[i].id===id) return TITLES[i]; return null; }
