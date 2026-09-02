@@ -1,7 +1,7 @@
 /* GYM.LOG Service Worker
    Bei jeder neuen Version die Zahl in CACHE erhöhen –
    dadurch wird der alte Zwischenspeicher verworfen. */
-var CACHE = "gymlog-v12";
+var CACHE = "gymlog-v15";
 
 var SHELL = [
   "./",

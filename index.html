@@ -142,6 +142,8 @@
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .ex-last{font-family:var(--num);font-size:10px;color:var(--text-dim);flex:none;
     max-width:38%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .ex-info{background:none;border:none;color:var(--text-dim);font-size:15px;padding:0 2px;
+    line-height:1;flex:none;}
   .chev{font-size:10px;color:var(--accent);transition:transform .2s;flex:none;}
   .ex-card.open .chev{transform:rotate(180deg);}
   .set-row{display:flex;align-items:center;gap:7px;margin-bottom:6px;}
@@ -222,6 +224,11 @@
   .legend-row .l-bar{width:5px;height:16px;flex:none;}
   .h2row{display:flex;align-items:center;justify-content:space-between;}
   .info-btn{background:none;border:none;color:var(--accent);font-size:17px;padding:0 4px 9px;line-height:1;}
+  .toggle-btn{background:rgba(79,214,255,.1);border:1px solid var(--border);color:var(--accent);
+    font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+    padding:6px 10px;margin-bottom:9px;
+    clip-path:polygon(5px 0,100% 0,calc(100% - 5px) 100%,0 100%);}
+  .toggle-btn .tg-chev{font-size:9px;margin-left:2px;}
 
   /* ---------- Diagramme / Karten ---------- */
   .card,.chart-box{padding:13px;}
@@ -335,6 +342,83 @@
     font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;padding:6px 9px;text-transform:none;
     clip-path:none;}
   .pick-chips button.on{color:var(--accent);border-color:var(--accent);background:rgba(79,214,255,.12);}
+
+  /* ---------- Startseite ---------- */
+  .week-row{display:flex;gap:6px;}
+  .wk-cell{flex:1;min-width:0;background:var(--bg-elev);border:1px solid var(--border);
+    -webkit-backdrop-filter:blur(13px);backdrop-filter:blur(13px);
+    padding:11px 6px;text-align:center;
+    clip-path:polygon(6px 0,100% 0,calc(100% - 6px) 100%,0 100%);}
+  .wk-val{font-family:var(--num);font-size:17px;font-weight:700;line-height:1;
+    overflow:hidden;text-overflow:ellipsis;}
+  .wk-lbl{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;color:var(--text-dim);
+    margin-top:5px;text-transform:uppercase;}
+  .feed-day{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;color:var(--text-dim);
+    margin:16px 0 8px 2px;text-transform:uppercase;}
+  .feed-day:first-child{margin-top:4px;}
+  .fcard{position:relative;display:flex;align-items:center;gap:10px;padding:10px 11px 10px 14px;
+    margin-bottom:7px;background:var(--bg-elev);border:1px solid var(--border);
+    -webkit-backdrop-filter:blur(13px);backdrop-filter:blur(13px);
+    clip-path:polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%);}
+  .fc-bar{position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--fc);opacity:.85;}
+  .fcard.t,.fcard.l{box-shadow:inset 0 0 26px -18px var(--fc);}
+  .fcard.shine .fc-titlename{background:linear-gradient(90deg,#a86fe0,#e6c6ff,#a86fe0);
+    background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:shim 3s linear infinite;}
+  .fc-ico{width:26px;height:26px;flex:none;color:var(--fc);display:flex;align-items:center;justify-content:center;}
+  .fc-ico .ic{width:20px;height:20px;}
+  .fc-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .fc-title{font-size:13.5px;font-weight:700;line-height:1.25;letter-spacing:.02em;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .fcard.t .fc-title,.fcard.l .fc-title{color:var(--fc);}
+  .fc-sub{font-size:10.5px;color:var(--text-dim);line-height:1.3;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .fc-open{font-family:var(--mono);font-size:8px;letter-spacing:.1em;color:var(--text-dim);
+    border:1px solid var(--border);padding:1px 4px;vertical-align:2px;}
+  .fc-right{flex:none;text-align:right;font-family:var(--num);line-height:1.15;}
+  .fc-right b{display:block;font-size:15px;color:var(--fc);}
+  .fc-right span{font-size:8.5px;color:var(--text-dim);letter-spacing:.06em;}
+  .fc-info{flex:none;background:none;border:none;color:var(--text-dim);font-size:15px;
+    padding:0 0 0 4px;line-height:1;}
+
+  .fcard.w.open{margin-bottom:0;border-bottom-color:transparent;
+    clip-path:polygon(8px 0,100% 0,100% 100%,0 100%,0 8px);}
+  .fc-toggle{flex:none;background:none;border:none;color:var(--accent);font-size:11px;
+    padding:0 0 0 4px;line-height:1;}
+  .fc-badge{font-family:var(--num);font-size:9px;color:#04060d;background:var(--gold);
+    padding:1px 5px;vertical-align:2px;margin-left:3px;}
+  .wdetail{background:rgba(8,14,26,.72);border:1px solid var(--border);border-top:none;
+    -webkit-backdrop-filter:blur(13px);backdrop-filter:blur(13px);
+    padding:10px 12px 12px;margin-bottom:7px;
+    clip-path:polygon(0 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%);
+    animation:wdIn .22s ease;}
+  @keyframes wdIn{from{opacity:0;transform:translateY(-4px);}}
+  .wd-head{font-family:var(--mono);font-size:8.5px;letter-spacing:.18em;color:var(--text-dim);
+    margin:2px 0 7px;text-transform:uppercase;}
+  .wd-head:not(:first-child){margin-top:13px;padding-top:10px;border-top:1px solid rgba(120,190,255,.14);}
+  .wd-ex{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px;}
+  .wd-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .wd-sets{font-family:var(--num);font-size:10px;color:var(--text-dim);flex:none;
+    max-width:42%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .wd-vol{font-family:var(--num);font-size:10px;color:var(--accent);flex:none;width:58px;text-align:right;}
+  .wd-un{display:flex;align-items:center;gap:9px;padding:5px 0;}
+  .wd-unico{width:20px;height:20px;flex:none;color:var(--uc);display:flex;align-items:center;justify-content:center;}
+  .wd-unico .ic{width:16px;height:16px;}
+  .wd-unmain{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;}
+  .wd-unname{font-size:12px;font-weight:700;color:var(--uc);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .wd-unsub{font-size:10px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+  /* ---------- Muskelkarte ---------- */
+  .bodywrap{display:flex;justify-content:center;padding:4px 0 8px;}
+  .bodymap{width:100%;max-width:250px;height:auto;}
+  .ml-row{display:flex;flex-wrap:wrap;gap:5px 8px;align-items:baseline;margin-bottom:6px;}
+  .ml-row.dim .ml-item{opacity:.6;}
+  .ml-lbl{font-family:var(--mono);font-size:8.5px;letter-spacing:.14em;color:var(--text-dim);
+    width:34px;flex:none;}
+  .ml-item{font-size:11.5px;font-weight:600;}
+  .pick-body{display:flex;justify-content:center;padding:2px 0 8px;flex:none;}
+  .pick-body .bodymap{max-width:150px;}
 
   /* ---------- Bestenlisten ---------- */
   .lb-head{display:flex;align-items:center;gap:6px;padding:0 9px 6px;
@@ -533,7 +617,7 @@
   </header>
 
   <!-- TRAINING -->
-  <div class="tab active" id="tab-training">
+  <div class="tab" id="tab-training">
     <div class="today-bar">
       <div class="vol">Heute: <b id="todayVol">0</b> kg bewegt</div>
       <button class="finish-btn" id="finishBtn">Workout abschließen</button>
@@ -546,11 +630,15 @@
     </section>
   </div>
 
-  <!-- FORTSCHRITT -->
-  <div class="tab" id="tab-progress">
+  <!-- START -->
+  <div class="tab active" id="tab-home">
     <section>
-      <h2>FORTSCHRITT</h2>
-      <div class="chart-box">
+      <h2>DIESE WOCHE</h2>
+      <div class="week-row" id="weekRow"></div>
+    </section>
+    <section>
+      <div class="h2row"><h2>VERLAUF</h2><button class="toggle-btn" id="chartsToggle">Kurven <span class="tg-chev">▾</span></button></div>
+      <div id="chartsBox" style="display:none"><div class="chart-box">
         <div class="chart-title">GESAMTVOLUMEN PRO WORKOUT (KG)</div>
         <div id="volChart"></div>
       </div>
@@ -567,8 +655,11 @@
         <div class="chart-title">PACE-ENTWICKLUNG (MIN/KM, NIEDRIGER = SCHNELLER)</div>
         <div id="runPaceChart"></div>
       </div>
+    </div>
+      <div id="feed"></div>
     </section>
   </div>
+
   <div class="tab" id="tab-leagues">
     <section>
       <div class="h2row"><h2>LIGEN PRO MUSKELGRUPPE</h2><button class="info-btn" id="leagueInfoBtn" aria-label="Info">ⓘ</button></div>
@@ -644,8 +735,8 @@
 </div>
 
 <nav class="tabbar">
-  <button data-tab="training" class="active"><span class="ico"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8v8M7 6v12M17 6v12M20 8v8M7 12h10"/></svg></span>Training</button>
-  <button data-tab="progress"><span class="ico"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 19h16M7 15l4-5 3 3 5-7"/></svg></span>Fortschritt</button>
+  <button data-tab="home" class="active"><span class="ico"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7M6 10v10h12V10"/></svg></span>Start</button>
+  <button data-tab="training"><span class="ico"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8v8M7 6v12M17 6v12M20 8v8M7 12h10"/></svg></span>Training</button>
   <button data-tab="leagues"><span class="ico"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19l7-5 7 5M5 13l7-5 7 5M5 7l7-4 7 4"/></svg></span>Ligen</button>
   <button data-tab="ach"><span class="ico"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 01-8 0zM8 6H5v1a3 3 0 003 3M16 6h3v1a3 3 0 01-3 3M10 17h4M9 21h6M12 13v4"/></svg></span>Erfolge</button>
   <button data-tab="profile"><span class="ico"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg></span>Profil</button>
@@ -840,7 +931,7 @@ var LEAGUES = [
 ];
 
 /* ---------- State ---------- */
-function def(){ return {plan:defaultPlan(), profile:null, calibAsked:0, calibOptOut:false, installAsked:0, installOptOut:false, totalXP:0, streak:0, lastLogDate:null, finishedDates:[], entries:[], lastInputs:{}, leaguePeak:{}, achSeen:{}, titlesSeen:{}, title:null}; }
+function def(){ return {plan:defaultPlan(), profile:null, calibAsked:0, calibOptOut:false, installAsked:0, installOptOut:false, events:[], totalXP:0, streak:0, lastLogDate:null, finishedDates:[], entries:[], lastInputs:{}, leaguePeak:{}, achSeen:{}, titlesSeen:{}, title:null}; }
 function load(){
   try{ var r=localStorage.getItem(KEY); if(!r) return def();
     var p=JSON.parse(r); var st=Object.assign(def(), p);
@@ -940,6 +1031,8 @@ function addEntry(exId){
   if(rows.length===0){ toast("Mindestens einen Satz ausfüllen"); return; }
 
   var xp = rows.length*10 + Math.floor(volume/250);
+  var prevBest=bestBefore(exId);
+  var lvlBefore=levelFromXP(S.totalXP).level;
   S.totalXP += xp;
   var d = today();
   if(S.lastLogDate !== d){
@@ -950,6 +1043,16 @@ function addEntry(exId){
                   setList:rows, vol:volume, xp:xp, ps:ex.perSide?1:0});
   S.lastInputs[exId] = {assist:assist, setList:rows.map(function(r){ return {w:Math.abs(r.w), reps:r.reps}; })};
   UI.open[exId] = false;
+  /* Bestwert? */
+  var newBest=0;
+  rows.forEach(function(r){ var v=est1RM(r.eff,r.reps); if(v>newBest) newBest=v; });
+  if(prevBest>0 && newBest>prevBest+0.5){
+    pushEvent({kind:"pr", ex:exId, name:ex.name, value:Math.round(newBest*10)/10,
+               gain:Math.round((newBest-prevBest)*10)/10, date:d});
+  }
+  var lvlAfter=levelFromXP(S.totalXP).level;
+  if(lvlAfter>lvlBefore) pushEvent({kind:"level", level:lvlAfter, date:d});
+  upsertWorkout(d);
   save();
   buzz(12);
   checkAchievements(true);
@@ -969,7 +1072,7 @@ function addRun(){
   var pace=secs/km;
   if(pace<130){ toast("Das wäre Weltrekord-Tempo – bitte prüfen"); return; }
   var xp = Math.round(km*12) + (pace<G(360,415) ? Math.round(km*4) : 0);
-
+  var lvlR=levelFromXP(S.totalXP).level;
   S.totalXP += xp;
   var d=today();
   if(S.lastLogDate!==d){
@@ -979,6 +1082,9 @@ function addRun(){
   S.entries.push({id:Date.now()+"_"+Math.random().toString(36).slice(2,6), ex:"run", date:d, ts:Date.now(),
                   km:km, secs:secs, pace:pace, vol:0, xp:xp});
   S.lastRun={km:km, min:mi, sec:se};
+  pushEvent({kind:"run", km:km, secs:secs, pace:pace, xp:xp, date:d});
+  var lvlA=levelFromXP(S.totalXP).level;
+  if(lvlA>lvlR) pushEvent({kind:"level", level:lvlA, date:d});
   save();
   buzz(12);
   checkAchievements(true);
@@ -1009,7 +1115,11 @@ function deleteEntry(id){
   for(var i=S.entries.length-1;i>=0;i--){
     if(S.entries[i].id===id){
       S.totalXP = Math.max(0, S.totalXP - S.entries[i].xp);
-      S.entries.splice(i,1); break;
+      var dd=S.entries[i].date;
+      S.entries.splice(i,1);
+      S.events=(S.events||[]).filter(function(ev){ return !(ev.kind==="workout"&&ev.date===dd); });
+      upsertWorkout(dd);
+      break;
     }
   }
   save(); renderAll();
@@ -1020,7 +1130,7 @@ function finishWorkout(){
   var vol = todayVolume();
   if(vol<=0){ toast("Heute noch nichts geloggt"); return; }
   var bonus = 0;
-  if(S.finishedDates.indexOf(d)===-1){ bonus=60; S.totalXP+=bonus; S.finishedDates.push(d); save(); }
+  if(S.finishedDates.indexOf(d)===-1){ bonus=60; S.totalXP+=bonus; S.finishedDates.push(d); upsertWorkout(d); save(); }
   var sets=0, entries=0;
   S.entries.forEach(function(e){ if(e.date===d){ sets += e.setList ? e.setList.length : (e.sets||0); entries++; } });
   var box=document.getElementById("summaryBox");
@@ -1689,6 +1799,7 @@ function checkAchievements(notify){
         events.push({kind:"ach", ico:a.ico, name:a.name, desc:a.desc,
                      tier:tr, color:ACH_COLOR[tr],
                      extra:(a.type==="counter"&&n>1)?("×"+n):null});
+        pushEvent({kind:"ach", ico:a.ico, name:a.name, desc:a.desc, color:ACH_COLOR[tr], date:today()});
       }
       S.achSeen[achKey(a)]=n;
     }
@@ -1700,6 +1811,8 @@ function checkAchievements(notify){
     var tier=Math.max(1,Math.min(5,p.to));
     events.push({kind:"league", ico:L.icon, name:L.name+"-Liga", desc:p.group,
                  color:L.color, from:LEAGUES[p.from].name, tier:tier});
+    pushEvent({kind:"league", group:p.group, from:LEAGUES[p.from].name, to:L.name,
+               fromColor:LEAGUES[p.from].color, color:L.color, ico:L.icon, date:today()});
   });
   /* neue Titel */
   var e2=earnedTitles(st);
@@ -1708,10 +1821,12 @@ function checkAchievements(notify){
     if(!S.titlesSeen[id]){
       S.titlesSeen[id]=1;
       var t=titleById(id);
-      if(t) events.push({kind:"title", id:id, name:titleName(t), desc:t.d?t.d():"",
+      if(t){ events.push({kind:"title", id:id, name:titleName(t), desc:t.d?t.d():"",
                          ico:RARITY[t.r].ico, color:RARITY[t.r].color,
                          rar:RARITY[t.r].label, shimmer:t.r==="sonder",
                          tier:TIER_BY_RARITY[t.r]});
+        pushEvent({kind:"title", name:titleName(t), desc:t.d?t.d():"", rar:RARITY[t.r].label,
+                   color:RARITY[t.r].color, ico:RARITY[t.r].ico, shimmer:t.r==="sonder", date:today()}); }
     }
   });
   save();
@@ -1736,6 +1851,433 @@ function checkAchievements(notify){
   sp.addEventListener("click", hide);      /* antippen überspringt */
   window.__hideSplash=hide;
 })();
+
+
+
+
+/* ---------- Startseite ---------- */
+var chartsOpen=false;
+function renderWeekRow(){
+  var el=document.getElementById("weekRow"); if(!el) return;
+  var st=computeStats(), wk=weekStart(today());
+  var vol=0, days={}, xp=0, runs=0;
+  S.entries.forEach(function(e){
+    if(weekStart(e.date)!==wk) return;
+    vol+=e.vol; days[e.date]=1; xp+=e.xp||0;
+    if(e.ex==="run") runs++;
+  });
+  function cell(v,l,c){ return '<div class="wk-cell"><div class="wk-val" style="color:'+(c||"var(--accent)")+'">'+v+'</div><div class="wk-lbl">'+l+'</div></div>'; }
+  el.innerHTML = cell(Object.keys(days).length,"Tage")+
+                 cell(fmt(vol),"kg bewegt","var(--teal)")+
+                 cell(fmt(xp),"XP","var(--gold)")+
+                 cell(st.weekStreak,"Wochen-Streak","var(--rust)");
+}
+
+function dayLabel(iso){
+  var t=today(), y=addDays(t,-1);
+  if(iso===t) return "HEUTE";
+  if(iso===y) return "GESTERN";
+  var d=new Date(iso+"T12:00:00");
+  var wd=["SO","MO","DI","MI","DO","FR","SA"][d.getDay()];
+  return wd+", "+d.getDate()+". "+["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"][d.getMonth()];
+}
+function timeLabel(ts){
+  var d=new Date(ts);
+  return pad2(d.getHours())+":"+pad2(d.getMinutes());
+}
+var openWorkouts={};
+function renderFeed(){
+  var el=document.getElementById("feed"); if(!el) return;
+  var evs=(S.events||[]).slice().sort(function(a,b){ return b.t-a.t; });
+  /* Freischaltungen eines Tages gehören zur Workout-Karte desselben Tages */
+  var wByDate={};
+  evs.forEach(function(e){ if(e.kind==="workout") wByDate[e.date]=e; });
+  var folded={};
+  evs.forEach(function(e){
+    if(["pr","ach","title","league","level"].indexOf(e.kind)===-1) return;
+    var w=wByDate[e.date]; if(!w) return;
+    (folded[w.id]=folded[w.id]||[]).push(e);
+    e._folded=true;
+  });
+  evs=evs.filter(function(e){ return !e._folded; });
+  evs.forEach(function(e){ delete e._folded; });
+  if(evs.length===0){
+    el.innerHTML='<div class="card" style="padding:18px"><p class="note" style="margin:0">'+
+      'Hier erscheint dein Verlauf: abgeschlossene Workouts, Läufe, neue Bestwerte, Erfolge, Titel und Liga-Aufstiege. '+
+      'Logge deinen ersten Satz im <b style="color:var(--accent)">Training</b>.</p></div>';
+    return;
+  }
+  var out="", lastDay=null;
+  evs.forEach(function(ev){
+    if(ev.date!==lastDay){
+      out+='<div class="feed-day">'+dayLabel(ev.date)+'</div>';
+      lastDay=ev.date;
+    }
+    out+=feedCard(ev, folded[ev.id]||[]);
+  });
+  el.innerHTML=out;
+  el.querySelectorAll(".fc-toggle").forEach(function(b){
+    b.addEventListener("click", function(e){
+      e.stopPropagation();
+      var id=b.getAttribute("data-ev");
+      openWorkouts[id]=!openWorkouts[id];
+      renderFeed();
+    });
+  });
+  el.querySelectorAll(".fc-info").forEach(function(b){
+    b.addEventListener("click", function(){
+      var id=b.getAttribute("data-ev");
+      var ev=null;
+      (S.events||[]).forEach(function(x){ if(x.id===id) ev=x; });
+      if(!ev) return;
+      var ids = ev.kind==="run" ? ["run"] : (ev.exercises||[]);
+      var names = ev.kind==="run" ? "Laufeinheit" : (ev.plan||"Workout");
+      openMuscleInfo(names.toUpperCase(), ids,
+        ev.kind==="run" ? "Beim Laufen arbeiten vor allem Oberschenkel und Waden, Rumpf und Gesäß stabilisieren."
+                        : ev.exercises.length+" Übungen · "+ev.sets+" Sätze · "+fmt(ev.vol)+" kg");
+    });
+  });
+}
+function feedCard(ev, unlocks){
+  unlocks=unlocks||[];
+  function shell(cls,col,ico,title,sub,right,info){
+    return '<div class="fcard '+cls+'" style="--fc:'+col+'">'+
+      '<span class="fc-bar"></span>'+
+      '<span class="fc-ico">'+ico+'</span>'+
+      '<span class="fc-main"><span class="fc-title">'+title+'</span>'+
+      (sub?'<span class="fc-sub">'+sub+'</span>':'')+'</span>'+
+      (right?'<span class="fc-right">'+right+'</span>':'')+
+      (info?'<button class="fc-info" data-ev="'+ev.id+'" aria-label="Muskeln">\u24D8</button>':'')+
+      '</div>';
+  }
+  if(ev.kind==="workout"){
+    var done=(S.finishedDates||[]).indexOf(ev.date)>-1;
+    var isOpen=!!openWorkouts[ev.id];
+    var card='<div class="fcard w'+(isOpen?" open":"")+'" style="--fc:var(--accent)">'+
+      '<span class="fc-bar"></span>'+
+      '<span class="fc-ico">'+svgIco("bench")+'</span>'+
+      '<span class="fc-main"><span class="fc-title">'+(ev.plan||"Workout")+
+        (done?'':' <span class="fc-open">offen</span>')+
+        (unlocks.length?' <span class="fc-badge">+'+unlocks.length+'</span>':'')+'</span>'+
+      '<span class="fc-sub">'+ev.exercises.length+" Übungen · "+ev.sets+" Sätze"+'</span></span>'+
+      '<span class="fc-right"><b>'+fmt(ev.vol)+'</b><span>kg</span></span>'+
+      '<button class="fc-info" data-ev="'+ev.id+'" aria-label="Muskeln">\u24D8</button>'+
+      '<button class="fc-toggle" data-ev="'+ev.id+'" aria-label="Details">'+(isOpen?"\u25B4":"\u25BE")+'</button>'+
+      '</div>';
+    if(!isOpen) return card;
+
+    /* Übungen des Tages */
+    var rows="";
+    var byEx={};
+    S.entries.forEach(function(e){
+      if(e.date!==ev.date || e.ex==="run") return;
+      (byEx[e.ex]=byEx[e.ex]||[]).push(e);
+    });
+    ev.exercises.forEach(function(id){
+      var ex=exById(id); if(!ex) return;
+      var sets=[], v=0;
+      (byEx[id]||[]).forEach(function(e){
+        (e.setList||[]).forEach(function(x){ sets.push(x.w+"×"+x.reps); v+=x.eff*x.reps; });
+      });
+      rows+='<div class="wd-ex"><span class="ex-dot" style="background:'+GROUP_COLORS[ex.group]+'"></span>'+
+        '<span class="wd-name">'+ex.name+'</span>'+
+        '<span class="wd-sets">'+sets.join(", ")+'</span>'+
+        '<span class="wd-vol">'+fmt(v)+' kg</span></div>';
+    });
+    var un="";
+    if(unlocks.length){
+      un='<div class="wd-head">FREIGESCHALTET</div>';
+      unlocks.slice().sort(function(a,b){ return a.t-b.t; }).forEach(function(u){
+        var col=u.color||"var(--gold)", ico=u.ico||"star", nm="", sub="";
+        if(u.kind==="pr"){ ico="bolt"; col="var(--gold)"; nm="Bestwert "+u.name; sub=String(u.value).replace(".",",")+" kg (+"+String(u.gain).replace(".",",")+")"; }
+        else if(u.kind==="ach"){ nm=u.name; sub=u.desc; }
+        else if(u.kind==="title"){ nm=u.name; sub=u.rar+"er Titel"; }
+        else if(u.kind==="league"){ ico=u.ico; nm=u.group+" \u2192 "+u.to; sub="Liga-Aufstieg aus "+u.from; }
+        else if(u.kind==="level"){ ico="star"; nm="Level "+u.level; sub="Levelaufstieg"; }
+        un+='<div class="wd-un" style="--uc:'+col+'"><span class="wd-unico">'+svgIco(ico)+'</span>'+
+            '<span class="wd-unmain"><span class="wd-unname">'+nm+'</span>'+
+            (sub?'<span class="wd-unsub">'+sub+'</span>':'')+'</span></div>';
+      });
+    }
+    return card+'<div class="wdetail"><div class="wd-head">ÜBUNGEN</div>'+rows+un+'</div>';
+  }
+  if(ev.kind==="run"){
+    return shell("r","#e07fb0",svgIco("shoe"),"Laufeinheit",
+      paceStr(ev.pace)+" · "+Math.floor(ev.secs/60)+" min",
+      '<b>'+String(ev.km).replace(".",",")+'</b><span>km</span>', true);
+  }
+  if(ev.kind==="pr"){
+    return shell("p","var(--gold)",svgIco("bolt"),"Neuer Bestwert",
+      ev.name, '<b>'+String(ev.value).replace(".",",")+'</b><span>kg &nbsp;+'+String(ev.gain).replace(".",",")+'</span>', false);
+  }
+  if(ev.kind==="ach"){
+    return shell("a",ev.color||"var(--teal)",svgIco(ev.ico),ev.name,ev.desc,"",false);
+  }
+  if(ev.kind==="title"){
+    return shell("t"+(ev.shimmer?" shine":""),ev.color,svgIco(ev.ico),
+      '<span class="fc-titlename"'+(ev.shimmer?' class="shimmer"':'')+'>'+ev.name+'</span>',
+      ev.rar+"er Titel · "+ev.desc,"",false);
+  }
+  if(ev.kind==="league"){
+    return shell("l",ev.color,svgIco(ev.ico),ev.group+" \u2192 "+ev.to,
+      "Aufstieg aus "+ev.from,"",false);
+  }
+  if(ev.kind==="level"){
+    return shell("v","var(--gold)",svgIco("star"),"Level "+ev.level+" erreicht","","",false);
+  }
+  return "";
+}
+
+/* ---------- Ereignis-Protokoll ---------- */
+function pushEvent(ev){
+  S.events=S.events||[];
+  ev.t=ev.t||Date.now();
+  ev.id=ev.id||(ev.t+"_"+Math.random().toString(36).slice(2,6));
+  S.events.push(ev);
+  if(S.events.length>400) S.events=S.events.slice(-400);
+}
+function upsertWorkout(date){
+  S.events=S.events||[];
+  var day=null;
+  for(var i=S.events.length-1;i>=0;i--){
+    if(S.events[i].kind==="workout" && S.events[i].date===date){ day=S.events[i]; break; }
+  }
+  var vol=0, sets=0, exIds={}, last=0;
+  S.entries.forEach(function(e){
+    if(e.date!==date || e.ex==="run") return;
+    vol+=e.vol; sets+=(e.setList?e.setList.length:0); exIds[e.ex]=1;
+    if(e.ts>last) last=e.ts;
+  });
+  if(sets===0) return;
+  var planName="";
+  var counts={};
+  Object.keys(exIds).forEach(function(id){
+    var ex=exById(id); if(!ex||!ex.day) return;
+    counts[ex.day]=(counts[ex.day]||0)+1;
+  });
+  var best=null;
+  Object.keys(counts).forEach(function(d){ if(best===null||counts[d]>counts[best]) best=d; });
+  if(best){ var pd=planDay(best); if(pd) planName=pd.name; }
+  var data={kind:"workout", date:date, t:last||Date.now(),
+            vol:Math.round(vol), sets:sets, exercises:Object.keys(exIds), plan:planName};
+  if(day){ data.id=day.id; S.events[S.events.indexOf(day)]=data; }
+  else pushEvent(data);
+}
+/* bester Wert einer Übung VOR dem aktuellen Eintrag */
+function bestBefore(exId){
+  var b=0;
+  S.entries.forEach(function(e){
+    if(e.ex!==exId) return;
+    (e.setList||[]).forEach(function(x){ var v=est1RM(x.eff,x.reps); if(v>b) b=v; });
+  });
+  return b;
+}
+
+/* ---------- Muskelkarte ----------
+   Zwei Silhouetten (Vorder- und Rückansicht) mit einfärbbaren Bereichen.
+   Nur zur Anschauung – Ligen und Erfolge rechnen weiter über die Hauptgruppen. */
+var REGION_COLOR={
+  chest:"var(--teal)", delt_f:"var(--lav)", biceps:"var(--blue)", forearm:"var(--blue)",
+  abs:"#7fae6e", oblique:"#7fae6e", quads:"var(--rust)", shin:"#a04a3a",
+  traps:"var(--gold)", lat:"var(--gold)", lowback:"var(--gold)",
+  delt_b:"var(--lav)", triceps:"var(--blue)",
+  glutes:"#d98a5a", hams:"var(--rust)", calves:"#a04a3a"
+};
+var REGION_NAME={
+  chest:"Brust", delt_f:"Schulter (vorn)", biceps:"Bizeps", forearm:"Unterarm",
+  abs:"Bauch", oblique:"Seitliche Bauchmuskeln", quads:"Quadrizeps", shin:"Schienbein",
+  traps:"Nacken", lat:"Latissimus", lowback:"Unterer Rücken",
+  delt_b:"Schulter (hinten)", triceps:"Trizeps",
+  glutes:"Gesäß", hams:"Beinbeuger", calves:"Waden"
+};
+/* Anatomische Figur, 110 × 240 je Ansicht.
+   m = links definiert und gespiegelt, c = mittig */
+var BODY_BASE={
+  head:"M55 3 C46 3 39 10 39 20 C39 28 44 35 51 37 L59 37 C66 35 71 28 71 20 C71 10 64 3 55 3 Z",
+  c:[],
+  m:["M55 36 C48 36 43 38 39 43 C33 48 30 57 29 67 C29 78 32 89 36 99 C38 106 39 113 40 120 C38 128 37 138 38 148 C39 156 41 162 43 167 C41 177 41 187 42 196 C43 205 42 214 43 222 C43 228 42 232 39 235 C36 237 33 239 34 240 L55 240 Z",
+     "M39 43 C33 46 27 52 25 61 C22 71 22 83 24 95 C26 106 28 117 30 127 C31 134 32 140 31 146 C30 151 28 155 29 158 C31 160 34 159 36 155 C38 150 39 144 39 137 C38 127 36 116 35 105 C34 94 34 83 35 73 C36 63 38 52 41 45 Z"]
+};
+var BODY_FRONT={
+  traps: {c:["M46 39 C50 37 60 37 64 39 C67 43 69 47 69 49 C63 52 57 54 55 54 C53 54 47 52 41 49 C41 47 43 43 46 39 Z"]},
+  delt_f:{m:["M33 45 C26 48 22 55 22 64 C22 69 25 72 30 72 C35 71 39 66 41 59 C42 52 39 46 33 45 Z"]},
+  chest: {m:["M41 50 C46 47 52 46 54 46 L54 78 C47 79 42 75 39 69 C36 62 37 55 41 50 Z"]},
+  biceps:{m:["M24 68 C21 75 20 84 21 92 C22 98 25 101 29 100 C33 99 35 94 35 87 C35 79 33 72 30 67 Z"]},
+  forearm:{m:["M22 102 C20 109 20 118 22 126 C23 132 26 134 29 133 C32 132 34 128 34 122 C34 114 32 107 30 101 Z"]},
+  abs:   {m:["M47 80 C50 79 53 79 54 80 L54 89 C52 90 49 90 47 89 Z",
+             "M47 92 C50 91 53 91 54 92 L54 101 C52 102 49 102 47 101 Z",
+             "M48 104 C50 103 53 103 54 104 L54 112 C52 113 49 113 48 112 Z",
+             "M49 115 C51 114 53 114 54 115 L54 121 C53 123 51 123 49 121 Z"]},
+  oblique:{m:["M41 84 C39 92 39 102 41 110 C42 116 44 120 46 122 L47 116 C44 108 43 96 43 86 Z"]},
+  quads: {m:["M42 158 C39 168 39 179 41 189 C42 194 44 197 47 196 C49 195 50 191 50 185 C50 175 49 166 48 158 Z",
+             "M50 159 C51 167 51 178 50 186 C50 191 51 194 52 195 C53 194 54 191 54 186 L54 159 Z"]},
+  shin:  {m:["M44 200 C42 207 42 215 43 222 C44 227 46 229 48 228 C50 227 51 223 51 217 C51 210 50 204 49 200 Z"]}
+};
+var BODY_BACK={
+  traps: {c:["M45 38 C50 36 60 36 65 38 C69 44 72 50 72 53 C65 58 59 62 55 63 C51 62 45 58 38 53 C38 50 41 44 45 38 Z"]},
+  delt_b:{m:["M33 45 C26 48 22 55 22 64 C22 69 25 72 30 72 C35 71 39 66 41 59 C42 52 39 46 33 45 Z"]},
+  lat:   {m:["M36 55 C31 63 29 73 31 83 C33 93 39 101 47 106 L54 99 L54 57 C48 54 41 53 36 55 Z"]},
+  triceps:{m:["M23 67 C20 74 18 83 19 91 C20 97 23 100 27 99 C31 98 33 93 33 86 C33 78 30 71 27 66 Z"]},
+  forearm:{m:["M22 102 C20 109 20 118 22 126 C23 132 26 134 29 133 C32 132 34 128 34 122 C34 114 32 107 30 101 Z"]},
+  lowback:{c:["M46 101 C50 100 60 100 64 101 C65 109 65 117 64 123 C61 129 58 132 55 133 C52 132 49 129 46 123 C45 117 45 109 46 101 Z"]},
+  glutes:{m:["M38 127 C33 133 32 142 34 150 C36 158 42 162 48 161 C52 160 54 157 54 152 L54 129 C48 125 42 125 38 127 Z"]},
+  hams:  {m:["M42 163 C40 172 40 183 42 191 C43 196 45 199 48 198 C50 197 51 193 51 187 C52 178 51 170 50 163 Z"]},
+  calves:{m:["M43 201 C41 208 40 216 42 223 C43 228 46 230 48 229 C50 228 51 224 51 218 C51 211 50 205 49 201 Z",
+             "M50 203 C51 209 51 216 51 220 C52 224 53 226 53 224 C54 218 53 209 52 203 Z"]}
+};
+
+function bodySVG(active, opts){
+  opts=opts||{};
+  var FW=110, gap=118, W=228, H=240;
+  function shape(d, fill, op, stroke){
+    return '<path d="'+d+'" fill="'+fill+'" opacity="'+op+'"'+
+           (stroke?' stroke="'+stroke+'" stroke-width="1"':'')+' stroke-linejoin="round"/>';
+  }
+  function fig(def, dx){
+    var out='<g transform="translate('+dx+',0)">';
+    var BF="rgba(120,190,255,.08)", BS="rgba(120,190,255,.2)";
+    /* Grundkörper: Rumpf und Arme zuerst, Kopf zuletzt darüber */
+    BODY_BASE.c.forEach(function(d){ out+=shape(d,BF,1,BS); });
+    BODY_BASE.m.forEach(function(d){
+      out+=shape(d,BF,1,BS);
+      out+='<g transform="translate('+FW+',0) scale(-1,1)">'+shape(d,BF,1,BS)+'</g>';
+    });
+    out+=shape(BODY_BASE.head,BF,1,BS);
+    /* Muskelbereiche */
+    Object.keys(def).forEach(function(k){
+      var lvl=active[k]; if(!lvl) return;
+      var col=REGION_COLOR[k]||"var(--accent)";
+      var op = lvl==="p" ? 0.92 : 0.38;
+      var st = lvl==="p" ? col : null;
+      (def[k].c||[]).forEach(function(d){ out+=shape(d,col,op,st); });
+      (def[k].m||[]).forEach(function(d){
+        out+=shape(d,col,op,st);
+        out+='<g transform="translate('+FW+',0) scale(-1,1)">'+shape(d,col,op,st)+'</g>';
+      });
+    });
+    return out+'</g>';
+  }
+  return '<svg class="bodymap" viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">'+
+         fig(BODY_FRONT,0)+fig(BODY_BACK,gap)+
+         (opts.labels?'<text x="55" y="236" text-anchor="middle" font-size="9" fill="#7d93b2" font-family="monospace" letter-spacing="1.5">VORN</text>'+
+                      '<text x="173" y="236" text-anchor="middle" font-size="9" fill="#7d93b2" font-family="monospace" letter-spacing="1.5">HINTEN</text>':'')+
+         '</svg>';
+}
+
+/* Übung -> Muskelbereiche: p = primär, s = sekundär */
+var MUSCLE_MAP={
+bench_bb:{p:["chest"],s:["delt_f","triceps"]},
+bench_db:{p:["chest"],s:["delt_f","triceps"]},
+bench_m:{p:["chest"],s:["delt_f","triceps"]},
+incline_bb:{p:["chest","delt_f"],s:["triceps"]},
+incline_db:{p:["chest","delt_f"],s:["triceps"]},
+incline_m:{p:["chest","delt_f"],s:["triceps"]},
+decline_m:{p:["chest"],s:["triceps"]},
+iso_chest:{p:["chest"],s:["delt_f"]},
+chest_cable:{p:["chest"],s:["delt_f","triceps"]},
+butterfly:{p:["chest"],s:["delt_f"]},
+cable_fly:{p:["chest"],s:["delt_f"]},
+dips:{p:["chest","triceps"],s:["delt_f"]},
+pushup:{p:["chest"],s:["triceps","delt_f","abs"]},
+deadlift:{p:["lowback","hams","glutes"],s:["traps","lat","forearm","quads"]},
+rdl:{p:["hams","glutes"],s:["lowback","forearm"]},
+pu_breit:{p:["lat"],s:["biceps","forearm"]},
+pu_eng:{p:["lat"],s:["biceps","forearm"]},
+chinup:{p:["lat","biceps"],s:["forearm"]},
+latpull:{p:["lat"],s:["biceps","forearm"]},
+latpull_eng:{p:["lat"],s:["biceps","forearm"]},
+row_bb:{p:["lat"],s:["biceps","lowback","delt_b"]},
+row_db:{p:["lat"],s:["biceps","delt_b"]},
+row_m:{p:["lat"],s:["biceps","delt_b"]},
+row_eng:{p:["lat"],s:["biceps","delt_b"]},
+row_breit:{p:["lat","delt_b"],s:["biceps"]},
+tbar:{p:["lat"],s:["biceps","traps","lowback"]},
+pullover:{p:["lat"],s:["chest","triceps"]},
+shrug:{p:["traps"],s:["forearm"]},
+lowback:{p:["lowback"],s:["glutes"]},
+ohp:{p:["delt_f"],s:["triceps","traps","abs"]},
+shoulder_db:{p:["delt_f"],s:["triceps","traps"]},
+shoulder_p:{p:["delt_f"],s:["triceps"]},
+arnold:{p:["delt_f"],s:["triceps"]},
+seitheben:{p:["delt_f","delt_b"],s:["traps"]},
+seith_cable:{p:["delt_f","delt_b"],s:["traps"]},
+rev_bfly:{p:["delt_b"],s:["traps","lat"]},
+facepull:{p:["delt_b"],s:["traps"]},
+frontraise:{p:["delt_f"],s:[]},
+upright_row:{p:["delt_f","traps"],s:["biceps"]},
+curl_bb:{p:["biceps"],s:["forearm"]},
+curl_db:{p:["biceps"],s:["forearm"]},
+biz_masch:{p:["biceps"],s:["forearm"]},
+curl_cable:{p:["biceps"],s:["forearm"]},
+preacher:{p:["biceps"],s:["forearm"]},
+hammer:{p:["biceps","forearm"],s:[]},
+hammer_db:{p:["biceps","forearm"],s:[]},
+close_bench:{p:["triceps"],s:["chest","delt_f"]},
+skullcrush:{p:["triceps"],s:[]},
+tri_masch:{p:["triceps"],s:[]},
+biz_unten:{p:["triceps"],s:[]},
+biz_kopf:{p:["triceps"],s:[]},
+kickback:{p:["triceps"],s:[]},
+squat:{p:["quads","glutes"],s:["hams","lowback","abs"]},
+front_squat:{p:["quads"],s:["glutes","abs","lowback"]},
+hack_squat:{p:["quads"],s:["glutes"]},
+legpress:{p:["quads","glutes"],s:["hams"]},
+legpress_h:{p:["quads","glutes"],s:["hams"]},
+hipthrust:{p:["glutes"],s:["hams"]},
+lunge:{p:["quads","glutes"],s:["hams"]},
+bulgarian:{p:["quads","glutes"],s:["hams"]},
+legext:{p:["quads"],s:[]},
+legcurl:{p:["hams"],s:["calves"]},
+legcurl_s:{p:["hams"],s:["calves"]},
+goodmorning:{p:["hams","lowback"],s:["glutes"]},
+adduktor:{p:["quads"],s:["glutes"]},
+abduktor:{p:["glutes"],s:["quads"]},
+calves:{p:["calves"],s:[]},
+calves_s:{p:["calves"],s:[]},
+abs_masch:{p:["abs"],s:[]},
+crunch_cable:{p:["abs"],s:[]},
+legraise:{p:["abs"],s:["quads"]},
+hanging_knee:{p:["abs"],s:["forearm","quads"]},
+ab_wheel:{p:["abs"],s:["lat","delt_f","oblique"]},
+situp:{p:["abs"],s:["quads","oblique"]},
+russian:{p:["abs","oblique"],s:[]},
+run:{p:["quads","hams","calves"],s:["glutes","abs"]}
+};
+function activeFromExercises(ids){
+  var a={};
+  ids.forEach(function(id){
+    var m=MUSCLE_MAP[id]; if(!m) return;
+    (m.p||[]).forEach(function(r){ a[r]="p"; });
+    (m.s||[]).forEach(function(r){ if(a[r]!=="p") a[r]="s"; });
+  });
+  return a;
+}
+function muscleLegend(ids){
+  var a=activeFromExercises(ids), prim=[], sec=[];
+  Object.keys(a).forEach(function(r){
+    (a[r]==="p"?prim:sec).push('<span class="ml-item" style="color:'+REGION_COLOR[r]+'">'+REGION_NAME[r]+'</span>');
+  });
+  var out="";
+  if(prim.length) out+='<div class="ml-row"><span class="ml-lbl">HAUPT</span>'+prim.join("")+'</div>';
+  if(sec.length)  out+='<div class="ml-row dim"><span class="ml-lbl">MIT</span>'+sec.join("")+'</div>';
+  return out;
+}
+function openMuscleInfo(title, ids, extra){
+  var box=document.getElementById("summaryBox");
+  box.className="summary info";
+  box.innerHTML='<button class="popup-x" id="popupX">\u00d7</button>'+
+    '<h3>'+title+'</h3>'+
+    '<div class="info-scroll">'+
+    '<div class="bodywrap">'+bodySVG(activeFromExercises(ids),{labels:true})+'</div>'+
+    muscleLegend(ids)+
+    (extra?('<p class="dim" style="margin-top:10px">'+extra+'</p>'):"")+
+    '</div>'+
+    '<button id="closeOverlay">Schließen</button>';
+  openOverlay();
+  function cl(){ closeOverlay(); box.className="summary"; }
+  document.getElementById("closeOverlay").addEventListener("click", cl);
+  document.getElementById("popupX").addEventListener("click", cl);
+}
 
 /* ---------- Support & Bestenlisten ---------- */
 var SUPPORT_MAIL="gym.log@outlook.de";
@@ -2250,7 +2792,7 @@ function renderAchievements(){
 }
 
 /* ---------- Rendering ---------- */
-var activeDay="push", activeTab="training";
+var activeDay="push", activeTab="home";
 
 function renderHud(){
   var lv=levelFromXP(S.totalXP);
@@ -2296,6 +2838,7 @@ function renderExList(){
       '<div class="ex-head"><span class="ex-dot" style="background:'+GROUP_COLORS[ex.group]+'"></span>'+
       '<span class="ex-name">'+ex.name+'</span>'+
       '<span class="ex-last">'+summary+'</span>'+
+      '<button class="ex-info" aria-label="Muskeln">ⓘ</button>'+
       '<span class="chev">▾</span></div>';
 
     var body = "";
@@ -2319,9 +2862,20 @@ function renderExList(){
     }
     card.innerHTML = head + body;
 
-    card.querySelector(".ex-head").addEventListener("click", function(){
+    card.querySelector(".ex-head").addEventListener("click", function(ev){
+      if(ev.target.classList.contains("ex-info")) return;
       UI.open[ex.id] = !open;
       renderExList();
+    });
+    var infoBtn=card.querySelector(".ex-info");
+    if(infoBtn) infoBtn.addEventListener("click", function(ev){
+      ev.stopPropagation();
+      var note=[];
+      if(ex.perSide) note.push("Gewicht pro Seite eintragen – gewertet wird die Gesamtlast.");
+      if(ex.bw===1) note.push("Dein Körpergewicht zählt mit; wähle „+ Zusatzgewicht“ oder „− Unterstützt“.");
+      else if(ex.bw>0) note.push("Ein Teil deines Körpergewichts wird automatisch mitgerechnet.");
+      note.push("Zählt für die Liga: "+ex.group+".");
+      openMuscleInfo(ex.name.toUpperCase(), [ex.id], note.join(" "));
     });
 
     if(open){
@@ -2478,16 +3032,19 @@ function openPicker(day){
   box.innerHTML='<button class="popup-x" id="popupX">\u00d7</button>'+
     '<h3>ÜBUNG WÄHLEN</h3>'+
     '<input id="pickSearch" class="t-search" type="text" placeholder="Übung suchen\u2026">'+
+    '<div class="pick-body" id="pickBody"></div>'+
     '<div class="pick-chips" id="pickChips"><button data-g="">Alle</button>'+
       groups.map(function(g){ return '<button data-g="'+g+'">'+g+'</button>'; }).join("")+'</div>'+
     '<div class="info-scroll" id="pickList"></div>'+
     '<button id="closeOverlay">Fertig</button>';
 
   var listEl=document.getElementById("pickList");
-  var chipEls=[], pending=false;
+  var bodyEl=document.getElementById("pickBody");
+  var chipEls=[], pending=false, preview=null;
 
   function paint(){
     pending=false;
+    bodyEl.innerHTML=bodySVG(activeFromExercises(preview?[preview]:day.ex),{});
     chipEls.forEach(function(b){
       var g=b.getAttribute("data-g"), on=(g===pickerGroup);
       b.className = on ? "on" : "";
@@ -2510,7 +3067,7 @@ function openPicker(day){
       r.addEventListener("click", function(){
         var id=r.getAttribute("data-id");
         var i=day.ex.indexOf(id);
-        if(i===-1) day.ex.push(id); else day.ex.splice(i,1);
+        if(i===-1){ day.ex.push(id); preview=id; } else { day.ex.splice(i,1); preview=null; }
         rebuildEX(); save(); schedule(); renderPlanEditor(); renderExList();
       });
     });
@@ -2878,6 +3435,12 @@ document.getElementById("calibBtn").addEventListener("click", buildCalibrationEx
 document.getElementById("installBtn").addEventListener("click", function(){ openInstallInfo(true); });
 document.getElementById("supportBtn").addEventListener("click", openSupport);
 document.getElementById("boardBtn").addEventListener("click", openLeaderboard);
+document.getElementById("chartsToggle").addEventListener("click", function(){
+  chartsOpen=!chartsOpen;
+  document.getElementById("chartsBox").style.display=chartsOpen?"block":"none";
+  this.innerHTML='Kurven <span class="tg-chev">'+(chartsOpen?"\u25B4":"\u25BE")+'</span>';
+  if(chartsOpen) renderCharts();
+});
 document.getElementById("exportBtn").addEventListener("click", function(){
   var blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});
   var a=document.createElement("a");
@@ -3024,7 +3587,7 @@ document.querySelectorAll(".tabbar button").forEach(function(b){
 function renderAll(){
   renderHud();
   if(activeTab==="training"){ renderDaySeg(); renderExList(); renderHistory(); renderToday(); }
-  if(activeTab==="progress"){ renderCharts(); }
+  if(activeTab==="home"){ renderWeekRow(); renderFeed(); if(chartsOpen) renderCharts(); }
   if(activeTab==="leagues"){ renderLeagues(); }
   if(activeTab==="ach"){ renderAchievements(); }
   if(activeTab==="profile"){ renderProfile(); renderPlanEditor(); }
