@@ -381,6 +381,7 @@
   .fc-info{flex:none;background:none;border:none;color:var(--text-dim);font-size:15px;
     padding:0 0 0 4px;line-height:1;}
 
+  .fcard.tappable{cursor:pointer;}
   .fcard.w.open{margin-bottom:0;border-bottom-color:transparent;
     clip-path:polygon(8px 0,100% 0,100% 100%,0 100%,0 8px);}
   .fc-toggle{flex:none;background:none;border:none;color:var(--accent);font-size:11px;
@@ -790,7 +791,7 @@
 "use strict";
 
 var KEY = "gymlog_v2_state";
-var APP_VERSION = "2.2.0";
+var APP_VERSION = "2.2.1";
 
 /* ---------- Übungskatalog ----------
    bench = geschätztes 1RM eines durchschnittlich trainierten Mannes als Vielfaches
@@ -1960,6 +1961,18 @@ function renderFeed(){
     out+=feedCard(ev, folded[ev.id]||[]);
   });
   el.innerHTML=out;
+  el.querySelectorAll(".fcard.tappable[data-ev], .wdetail.tappable[data-ev]").forEach(function(c){
+    c.addEventListener("click", function(e){
+      var t=e.target;
+      while(t && t!==c){
+        if(t.classList && (t.classList.contains("fc-info")||t.classList.contains("fc-toggle"))) return;
+        t=t.parentNode;
+      }
+      var id=c.getAttribute("data-ev");
+      openWorkouts[id]=!openWorkouts[id];
+      renderFeed();
+    });
+  });
   el.querySelectorAll(".fc-toggle").forEach(function(b){
     b.addEventListener("click", function(e){
       e.stopPropagation();
@@ -1997,7 +2010,7 @@ function feedCard(ev, unlocks){
   if(ev.kind==="workout"){
     var done=(S.finishedDates||[]).indexOf(ev.date)>-1;
     var isOpen=!!openWorkouts[ev.id];
-    var card='<div class="fcard w'+(isOpen?" open":"")+'" style="--fc:var(--accent)">'+
+    var card='<div class="fcard w tappable'+(isOpen?" open":"")+'" data-ev="'+ev.id+'" style="--fc:var(--accent)">'+
       '<span class="fc-bar"></span>'+
       '<span class="fc-ico">'+svgIco("bench")+'</span>'+
       '<span class="fc-main"><span class="fc-title">'+(ev.plan||"Workout")+
@@ -2043,7 +2056,7 @@ function feedCard(ev, unlocks){
             (sub?'<span class="wd-unsub">'+sub+'</span>':'')+'</span></div>';
       });
     }
-    return card+'<div class="wdetail"><div class="wd-head">ÜBUNGEN</div>'+rows+un+'</div>';
+    return card+'<div class="wdetail tappable" data-ev="'+ev.id+'"><div class="wd-head">ÜBUNGEN</div>'+rows+un+'</div>';
   }
   if(ev.kind==="run"){
     return shell("r","#e07fb0",svgIco("shoe"),"Laufeinheit",
@@ -2243,6 +2256,9 @@ function openTimer(){
 
 /* ---------- Update-Neuigkeiten ---------- */
 var NEWS=[
+ {v:"2.2.1", t:"Kleinere Verbesserungen", items:[
+   "Workout-Kacheln auf der Startseite lassen sich durch Antippen der ganzen Kachel auf- und zuklappen"
+ ]},
  {v:"2.2.0", t:"Anatomische Muskelkarte", items:[
    "Neue Muskelkarte mit anatomisch korrekter Darstellung, passend zu Geschlecht im Profil",
    "Adduktoren als eigener Bereich sichtbar",
