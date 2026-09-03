@@ -439,6 +439,17 @@
   .day-add{display:block;width:100%;flex:none;margin:2px 0 6px;padding:12px 0;font-size:12px;}
   .ex-tmp{font-family:var(--mono);font-size:8px;letter-spacing:.1em;color:var(--gold);
     border:1px solid rgba(215,166,62,.5);padding:1px 4px;vertical-align:1px;}
+  .ver-row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px;}
+  .ver-name{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.16em;color:var(--text);}
+  .ver-num{font-family:var(--num);font-size:11.5px;color:var(--accent);}
+  .vh-item{margin-bottom:6px;}
+  .vh-head{display:flex;align-items:center;gap:9px;padding:9px 10px;
+    background:rgba(10,16,30,.6);border:1px solid var(--border);
+    clip-path:polygon(6px 0,100% 0,calc(100% - 6px) 100%,0 100%);}
+  .vh-ver{font-family:var(--num);font-size:12px;font-weight:700;color:var(--accent);flex:none;width:42px;}
+  .vh-title{flex:1;min-width:0;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .vh-cur{font-family:var(--mono);font-size:8px;letter-spacing:.1em;color:#04060d;background:var(--accent);
+    padding:1px 5px;flex:none;}
   .news-list{margin:4px 0 10px;padding-left:16px;}
   .news-list li{font-size:12.5px;line-height:1.5;margin-bottom:5px;color:var(--text);}
 
@@ -742,6 +753,12 @@
         <p class="note">Tippe einen Trainingstag an, um Übungen hinzuzufügen oder zu entfernen. Den Namen eines Tages kannst du direkt im Feld ändern. Ligen und Erfolge passen sich automatisch an deine Übungen an.</p>
       </div>
       <div class="card" style="margin-top:12px;">
+        <div class="chart-title">APP</div>
+        <div class="ver-row"><span class="ver-name">GYM.LOG</span><span class="ver-num" id="verNum"></span></div>
+        <button class="ghost-btn" id="historyBtn">Versionsverlauf</button>
+        <p class="note" style="margin-top:10px;font-size:11px;">Muskelkarte auf Basis von <b>react-muscle-highlighter</b> (MIT-Lizenz, © soroojshehryar). Schriftart: Rajdhani (SIL Open Font License).</p>
+      </div>
+      <div class="card" style="margin-top:12px;">
         <div class="chart-title">DATEN</div>
         <button class="ghost-btn" id="supportBtn">Support &amp; Feedback</button>
         <button class="ghost-btn" id="installBtn">App installieren</button>
@@ -773,7 +790,7 @@
 "use strict";
 
 var KEY = "gymlog_v2_state";
-var APP_VERSION = "2.1.0";
+var APP_VERSION = "2.2.0";
 
 /* ---------- Übungskatalog ----------
    bench = geschätztes 1RM eines durchschnittlich trainierten Mannes als Vielfaches
@@ -2226,6 +2243,11 @@ function openTimer(){
 
 /* ---------- Update-Neuigkeiten ---------- */
 var NEWS=[
+ {v:"2.2.0", t:"Anatomische Muskelkarte", items:[
+   "Neue Muskelkarte mit anatomisch korrekter Darstellung, passend zu Geschlecht im Profil",
+   "Adduktoren als eigener Bereich sichtbar",
+   "Versionsverlauf im Profil: frühere Neuerungen lassen sich nachlesen"
+ ]},
  {v:"2.1.0", t:"Muskelkarte & faire Wertung", items:[
    "Anatomische Muskelkarte: alle Muskeln sichtbar, beanspruchte farbig hervorgehoben",
    "Körpergewichtsübungen zählen Wiederholungen jetzt bis 20 statt bis 12",
@@ -2242,6 +2264,43 @@ var NEWS=[
    "Support-Bereich für Rückmeldungen und Datenspenden"
  ]}
 ];
+var histOpen={};
+function openVersionHistory(){
+  var box=document.getElementById("summaryBox");
+  box.className="summary info";
+  function draw(){
+    var rows=NEWS.map(function(n,i){
+      var open=!!histOpen[n.v];
+      return '<div class="vh-item">'+
+        '<div class="vh-head" data-v="'+n.v+'">'+
+          '<span class="vh-ver">'+n.v+'</span>'+
+          '<span class="vh-title">'+n.t+'</span>'+
+          (i===0?'<span class="vh-cur">aktuell</span>':'')+
+          '<span class="chev">'+(open?"\u25B4":"\u25BE")+'</span>'+
+        '</div>'+
+        (open?'<ul class="news-list">'+n.items.map(function(x){ return '<li>'+x+'</li>'; }).join("")+'</ul>':'')+
+        '</div>';
+    }).join("");
+    box.innerHTML='<button class="popup-x" id="popupX">\u00d7</button>'+
+      '<h3>VERSIONSVERLAUF</h3>'+
+      '<div class="info-scroll" id="vhList">'+rows+'</div>'+
+      '<button id="closeOverlay">Schließen</button>';
+    document.getElementById("vhList").querySelectorAll(".vh-head").forEach(function(h){
+      h.addEventListener("click", function(){
+        var v=h.getAttribute("data-v");
+        histOpen[v]=!histOpen[v];
+        draw();
+      });
+    });
+    function cl(){ closeOverlay(); box.className="summary"; }
+    document.getElementById("closeOverlay").addEventListener("click", cl);
+    document.getElementById("popupX").addEventListener("click", cl);
+  }
+  histOpen[NEWS[0].v]=true;
+  draw();
+  openOverlay();
+}
+
 function maybeShowNews(){
   if(!S.newsSeen){ S.newsSeen=APP_VERSION; save(); return false; }   /* Erstinstallation: keine News */
   if(S.newsSeen===APP_VERSION) return false;
@@ -3664,6 +3723,8 @@ function buildCalibrationExport(){
 document.getElementById("calibBtn").addEventListener("click", buildCalibrationExport);
 document.getElementById("installBtn").addEventListener("click", function(){ openInstallInfo(true); });
 document.getElementById("supportBtn").addEventListener("click", openSupport);
+document.getElementById("historyBtn").addEventListener("click", openVersionHistory);
+document.getElementById("verNum").textContent="Version "+APP_VERSION;
 document.getElementById("timerBtn").addEventListener("click", openTimer);
 document.getElementById("boardBtn").addEventListener("click", openLeaderboard);
 document.getElementById("chartsToggle").addEventListener("click", function(){
