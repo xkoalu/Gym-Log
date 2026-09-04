@@ -451,6 +451,21 @@
   .vh-title{flex:1;min-width:0;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .vh-cur{font-family:var(--mono);font-size:8px;letter-spacing:.1em;color:#04060d;background:var(--accent);
     padding:1px 5px;flex:none;}
+  .cb-h{color:#d94f45 !important;letter-spacing:.4em !important;}
+  .summary.cb{border-color:#4a505c;box-shadow:0 0 30px -12px #4a505c;}
+  .cb-out{font-family:var(--num);font-size:11.5px;line-height:1.7;color:#818a99;
+    white-space:pre-wrap;word-break:break-word;text-align:left;margin:0;min-height:118px;}
+  .summary.cb > button:not(.popup-x){border-color:#4a505c;color:#8f97a4;background:rgba(74,80,92,.16);}
+  .lp-row{margin-bottom:13px;}
+  .lp-head{display:flex;align-items:center;gap:7px;margin-bottom:6px;}
+  .lp-name{font-size:13px;font-weight:700;flex:none;}
+  .lp-tier{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;flex:none;}
+  .lp-tier.now{font-weight:700;}
+  .lp-arrow{color:var(--text-dim);font-size:10px;flex:none;}
+  .lp-val{flex:1;text-align:right;font-family:var(--num);font-size:11px;white-space:nowrap;}
+  .lp-track{height:8px;background:rgba(120,190,255,.12);overflow:hidden;
+    clip-path:polygon(3px 0,100% 0,calc(100% - 3px) 100%,0 100%);}
+  .lp-fill{height:100%;width:0;box-shadow:0 0 8px -2px currentColor;}
   .news-list{margin:4px 0 10px;padding-left:16px;}
   .news-list li{font-size:12.5px;line-height:1.5;margin-bottom:5px;color:var(--text);}
 
@@ -630,11 +645,11 @@
   </div>
 </div>
 
-  <div class="applogo"><svg class="lg-mark" viewBox="0 0 18 26" aria-hidden="true"><rect x="0.6" y="0.6" width="7.6" height="11.6" rx="1"/><rect x="9.8" y="13.8" width="7.6" height="11.6" rx="1"/></svg><span class="lg-text">GYM<span class="lg-dot">.</span>LOG</span></div>
+  <div class="applogo" id="secLogo"><svg class="lg-mark" viewBox="0 0 18 26" aria-hidden="true"><rect x="0.6" y="0.6" width="7.6" height="11.6" rx="1"/><rect x="9.8" y="13.8" width="7.6" height="11.6" rx="1"/></svg><span class="lg-text">GYM<span class="lg-dot">.</span>LOG</span></div>
 
   <header class="hud brackets">
     <button class="status-tab" id="statusBtn">STATUS</button>
-    <div class="ring-wrap">
+    <div class="ring-wrap" id="secRing">
       <svg width="72" height="72" viewBox="0 0 72 72">
         <circle class="ring-track" cx="36" cy="36" r="30"></circle>
         <circle class="ring-fill" id="ringFill" cx="36" cy="36" r="30" stroke-dasharray="0 189"></circle>
@@ -646,7 +661,7 @@
       <button class="hud-titlebtn" id="titleBtn"><span id="hudTitle">Titel wählen</span><span class="tb-chev">›</span></button>
       <div class="xp-line"><b id="xpInto">0</b> / <span id="xpNeed">100</span> XP</div>
       <div class="xp-bar-track"><div class="xp-bar-fill" id="xpBar" style="width:0%"></div></div>
-      <div class="streak"><svg class="ic ic-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c3.5 0 6-2.4 6-5.6 0-3.8-3.4-6-4.6-10.4-2 1.6-2.6 3.6-2.2 5.6-1-.6-1.6-1.6-1.8-2.8C7.6 9.4 6 11.8 6 15.4 6 18.6 8.5 21 12 21z"/></svg> <span id="streakVal">0</span>&nbsp;Wochen-Streak</div>
+      <div class="streak" id="secStreak"><svg class="ic ic-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c3.5 0 6-2.4 6-5.6 0-3.8-3.4-6-4.6-10.4-2 1.6-2.6 3.6-2.2 5.6-1-.6-1.6-1.6-1.8-2.8C7.6 9.4 6 11.8 6 15.4 6 18.6 8.5 21 12 21z"/></svg> <span id="streakVal">0</span>&nbsp;Wochen-Streak</div>
     </div>
   </header>
 
@@ -791,7 +806,7 @@
 "use strict";
 
 var KEY = "gymlog_v2_state";
-var APP_VERSION = "2.2.1";
+var APP_VERSION = "2.4.0";
 
 /* ---------- Übungskatalog ----------
    bench = geschätztes 1RM eines durchschnittlich trainierten Mannes als Vielfaches
@@ -972,7 +987,7 @@ var LEAGUES = [
 ];
 
 /* ---------- State ---------- */
-function def(){ return {plan:defaultPlan(), profile:null, calibAsked:0, calibOptOut:false, installAsked:0, installOptOut:false, events:[], dayMods:{}, restSeconds:90, newsSeen:null, totalXP:0, streak:0, lastLogDate:null, finishedDates:[], entries:[], lastInputs:{}, leaguePeak:{}, achSeen:{}, titlesSeen:{}, title:null}; }
+function def(){ return {plan:defaultPlan(), profile:null, calibAsked:0, calibOptOut:false, installAsked:0, installOptOut:false, events:[], dayMods:{}, restSeconds:90, newsSeen:null, codebreaker:false, totalXP:0, streak:0, lastLogDate:null, finishedDates:[], entries:[], lastInputs:{}, leaguePeak:{}, achSeen:{}, titlesSeen:{}, title:null}; }
 function load(){
   try{ var r=localStorage.getItem(KEY); if(!r) return def();
     var p=JSON.parse(r); var st=Object.assign(def(), p);
@@ -1175,7 +1190,10 @@ function finishWorkout(){
   var vol = todayVolume();
   if(vol<=0){ toast("Heute noch nichts geloggt"); return; }
   var bonus = 0;
+  var scBefore = groupScores();          /* Stand vor dem Abschluss */
   if(S.finishedDates.indexOf(d)===-1){ bonus=60; S.totalXP+=bonus; S.finishedDates.push(d); upsertWorkout(d); save(); }
+  var scAfter = groupScores();           /* Stand mit dem heutigen Workout */
+  var lpRows = leagueDelta(scBefore, scAfter);
   var sets=0, entries=0;
   S.entries.forEach(function(e){ if(e.date===d){ sets += e.setList ? e.setList.length : (e.sets||0); entries++; } });
   var box=document.getElementById("summaryBox");
@@ -1190,8 +1208,10 @@ function finishWorkout(){
   document.getElementById("closeOverlay").addEventListener("click", function(){
     box.className="summary";
     closeOverlay();
-    checkAchievements(true);   /* Bonus-XP kann Erfolge auslösen */
-    renderAll();
+    openLeagueProgress(lpRows, function(){
+      checkAchievements(true);   /* Bonus-XP und neue Ligen können Erfolge auslösen */
+      renderAll();
+    });
   });
 }
 function todayVolume(){
@@ -1201,13 +1221,17 @@ function todayVolume(){
 }
 
 /* ---------- Ligen ---------- */
-function groupScores(){
+function groupScores(forceToday){
   if(!S.profile) return null;
   var p=S.profile, af=ageFactor(p.age);
   var cutoff = Date.now() - 90*86400000;
+  var td=today(), openToday=!forceToday && (S.finishedDates||[]).indexOf(td)===-1;
   var best = {}; // exId -> best est1RM (letzte 90 Tage)
   S.entries.forEach(function(e){
     if(e.ts<cutoff) return;
+    /* Das laufende Workout zählt erst, wenn es abgeschlossen ist –
+       sonst springt die Liga nach jedem einzelnen Satz. */
+    if(openToday && e.date===td) return;
     var sets = e.setList || [{eff:e.eff, reps:e.reps}];
     sets.forEach(function(s){
       var v = est1RMFor(e.ex, s.eff, s.reps);
@@ -1236,6 +1260,7 @@ function groupScores(){
   var bp=null;
   S.entries.forEach(function(e){
     if(e.ex!=="run" || e.ts<cutoff || e.km<3) return;
+    if(openToday && e.date===td) return;
     if(bp===null||e.pace<bp) bp=e.pace;
   });
   res["Ausdauer"] = bp===null ? null : runScore(bp, p.age, p.gender);
@@ -1751,7 +1776,8 @@ var RARITY = {
   mythisch: {label:"Mythisch",    color:"#e08a3c", ico:"rMythisch"},
   legendaer:{label:"Legendär",    color:"#d94f45", ico:"rLegendaer"},
   sonder:   {label:"Sonderstufe", color:"#a86fe0", ico:"rSonder"},
-  beruecht: {label:"Berüchtigt",  color:"#9aa832", ico:"rBeruecht"}
+  beruecht: {label:"Berüchtigt",  color:"#9aa832", ico:"rBeruecht"},
+  geheim:   {label:"",            color:"#4a505c", ico:"rBeruecht"}
 };
 
 var TITLES = [
@@ -1798,6 +1824,9 @@ var TITLES = [
   {id:"vollkommen",r:"sonder", hidden:true, m:"Der Vollkommene",  w:"Die Vollkommene",     d:function(){return "Alle Erfolge der App freigeschaltet";}, f:function(st){return st.allAchDone();}},
   {id:"monarch",    r:"sonder",  m:"Schattenmonarch",    w:"Schattenmonarchin",   d:function(){return "Alle Kategorien in der Meister-Liga";}, f:function(st){return st.groupsAtLeast(5)>=GROUPS.length;}},
   /* BERÜCHTIGT (versteckt bis freigeschaltet) */
+  {id:"codebreaker",r:"geheim", hidden:true, secret:true, m:"Codebreaker", w:"Codebreakerin",
+   d:function(){return "Du hast den Code gebrochen.";},
+   f:function(){return !!S.codebreaker;}},
   {id:"verschollen",r:"beruecht",m:"Der Verschollene",   w:"Die Verschollene",    d:function(){return "8 Wochen am Stück nichts geloggt";}, f:function(st){return st.maxGapWeeks>=8;}},
   {id:"staub",      r:"beruecht",m:"Staubfänger",        w:"Staubfängerin",       d:function(){return "Nach über 12 Wochen Pause zurückgekehrt";}, f:function(st){return st.returnedAfterWeeks>=12;}},
   {id:"fabulier",   r:"beruecht",m:"Der Fabulierer",     w:"Die Fabuliererin",    d:function(){return "Level künstlich aufgebläht – dieselbe Übung 3× an einem Tag oder mehr als 3 volle Programme";}, f:function(st){return st.maxProgramsPerDay>3 || st.maxSameExPerDay>=3;}},
@@ -2073,7 +2102,7 @@ function feedCard(ev, unlocks){
   if(ev.kind==="title"){
     return shell("t"+(ev.shimmer?" shine":""),ev.color,svgIco(ev.ico),
       '<span class="fc-titlename"'+(ev.shimmer?' class="shimmer"':'')+'>'+ev.name+'</span>',
-      ev.rar+"er Titel · "+ev.desc,"",false);
+      (ev.rar? ev.rar+"er Titel · " : "")+ev.desc,"",false);
   }
   if(ev.kind==="league"){
     return shell("l",ev.color,svgIco(ev.ico),ev.group+" \u2192 "+ev.to,
@@ -2254,8 +2283,168 @@ function openTimer(){
   document.getElementById("timerBox").addEventListener("click", cl);
 }
 
+
+/* ---------- Liga-Fortschritt nach dem Workout ---------- */
+function leagueDelta(before, after){
+  var rows=[];
+  GROUPS.forEach(function(g){
+    var b=(before&&before[g]!==null&&before[g]!==undefined)?before[g]:null;
+    var a=(after&&after[g]!==null&&after[g]!==undefined)?after[g]:null;
+    if(a===null) return;
+    if(b!==null && Math.abs(a-b)<0.005) return;
+    rows.push({g:g, from:b, to:a,
+               fromIdx:b===null?-1:leagueFor(b).idx, toIdx:leagueFor(a).idx});
+  });
+  return rows;
+}
+function tierFrac(score){
+  var L=leagueFor(score), lo=L.idx===0?0:LEAGUES[L.idx-1].max;
+  var hi=L.l.max===99? Math.max(score, lo+1) : L.l.max;
+  return Math.max(0, Math.min(1, (score-lo)/(hi-lo)));
+}
+function openLeagueProgress(rows, done){
+  if(!rows.length){ if(done) done(); return; }
+  var box=document.getElementById("summaryBox");
+  box.className="summary info";
+  box.innerHTML='<button class="popup-x" id="popupX">\u00d7</button>'+
+    '<h3>LIGA-FORTSCHRITT</h3>'+
+    '<div class="info-scroll">'+rows.map(function(r,i){
+      var toL=LEAGUES[r.toIdx], fromL=r.fromIdx>=0?LEAGUES[r.fromIdx]:null;
+      var up=r.from===null || r.to>r.from;
+      return '<div class="lp-row" data-i="'+i+'">'+
+        '<div class="lp-head"><span class="ex-dot" style="background:'+GROUP_COLORS[r.g]+'"></span>'+
+        '<span class="lp-name">'+r.g+'</span>'+
+        (fromL && r.toIdx!==r.fromIdx
+          ? '<span class="lp-tier" style="color:'+fromL.color+'">'+fromL.name+'</span><span class="lp-arrow">\u2192</span>'
+          : '')+
+        '<span class="lp-tier now" style="color:'+toL.color+'">'+toL.name+'</span>'+
+        '<span class="lp-val" id="lpv'+i+'" style="color:'+(up?"var(--teal)":"var(--rust)")+'"></span></div>'+
+        '<div class="lp-track"><div class="lp-fill" id="lpf'+i+'" style="background:'+toL.color+'"></div></div>'+
+        '</div>';
+    }).join("")+'</div>'+
+    '<button id="closeOverlay">Weiter</button>';
+  openOverlay();
+
+  var t0=null, DUR=1100;
+  function ease(x){ return 1-Math.pow(1-x,3); }
+  function frame(ts){
+    if(t0===null) t0=ts;
+    var p=Math.min(1,(ts-t0)/DUR), e=ease(p);
+    rows.forEach(function(r,i){
+      var fromV=r.from===null?0:r.from, v=fromV+(r.to-fromV)*e;
+      var fEl=document.getElementById("lpf"+i), vEl=document.getElementById("lpv"+i);
+      if(fEl) fEl.style.width=Math.round(tierFrac(v)*100)+"%";
+      if(vEl){
+        var d=r.to-(r.from===null?0:r.from);
+        vEl.textContent=v.toFixed(2).replace(".",",")+"  "+(d>=0?"+":"\u2212")+Math.abs(d).toFixed(2).replace(".",",");
+      }
+    });
+    if(p<1) requestAnimationFrame(frame);
+  }
+  if(window.requestAnimationFrame) requestAnimationFrame(frame);
+  else rows.forEach(function(r,i){
+    var fEl=document.getElementById("lpf"+i); if(fEl) fEl.style.width=Math.round(tierFrac(r.to)*100)+"%";
+  });
+
+  function cl(){ closeOverlay(); box.className="summary"; if(done) done(); }
+  document.getElementById("closeOverlay").addEventListener("click", cl);
+  document.getElementById("popupX").addEventListener("click", cl);
+}
+
+/* ---------- Verborgener Titel ---------- */
+var GLYPHS="\u2593\u2592\u2591\u25AE\u25AB\u2021\u00A4\u00A7\u0416\u042F\u0414\u2260\u2248\u00BF\u00A1\u2318\u2325\u2591#%&@$";
+function scramble(str, seed){
+  var out="", h=seed||7;
+  for(var i=0;i<str.length;i++){
+    if(str.charAt(i)===" "){ out+=" "; continue; }
+    h=(h*31+str.charCodeAt(i))%9973;
+    out+=GLYPHS.charAt(h%GLYPHS.length);
+  }
+  return out;
+}
+function titleDisplay(t){ return titleName(t); }
+/* Nur in der Titel-Auswahl bleibt der geheime Titel unlesbar */
+function titleListName(t){ return t.secret ? scramble(titleName(t), 13) : titleName(t); }
+
+/* Eingabefolge: Level-Ring, Logo, Level-Ring, Logo, Streak, Streak, Logo.
+   Alle drei Elemente sind sonst ohne Funktion – es werden keine Daten verändert. */
+var SECRET=["ring","logo","ring","logo","streak","streak","logo"];
+var secretBuf=[], secretTimer=null;
+function secretTap(which){
+  if(S.codebreaker) return;
+  if(secretTimer) clearTimeout(secretTimer);
+  secretBuf.push(which);
+  /* Puffer von vorn kürzen, bis er wieder ein gültiger Anfang der Folge ist */
+  function isPrefix(){
+    for(var i=0;i<secretBuf.length;i++) if(secretBuf[i]!==SECRET[i]) return false;
+    return true;
+  }
+  while(secretBuf.length && !isPrefix()) secretBuf.shift();
+  secretTimer=setTimeout(function(){ secretBuf=[]; }, 9000);
+  if(secretBuf.length===SECRET.length){
+    secretBuf=[];
+    S.codebreaker=true;
+    S.titlesSeen=S.titlesSeen||{};
+    S.titlesSeen["codebreaker"]=1;      /* verhindert die normale Feier-Karte */
+    pushEvent({kind:"title", name:"Codebreaker", desc:"Du hast den Code gebrochen.",
+               rar:"", color:RARITY.geheim.color, ico:RARITY.geheim.ico, shimmer:false, date:today()});
+    save();
+    buzz([12,40,12,40,60]);
+    openCodebreaker();
+  }
+}
+function openCodebreaker(){
+  var box=document.getElementById("summaryBox");
+  box.className="summary celeb cb";
+  box.style.setProperty("--cc", RARITY.geheim.color);
+  var real=titleName(titleById("codebreaker"));
+  var lines=[
+    "\u2593 SYSTEM_ERR 0x5F3A \u2592\u2591",
+    scramble("kernel trace unreadable segment",3),
+    scramble("integrity check bypassed",5),
+    "\u25AE\u25AE\u25AE  "+real+"  \u25AE\u25AE\u25AE",
+    scramble("registry entry written",11),
+    scramble("no rollback available",17)
+  ];
+  box.innerHTML='<button class="popup-x" id="popupX">\u00d7</button>'+
+    '<h3 class="cb-h">ERROR</h3>'+
+    '<pre class="cb-out" id="cbOut"></pre>'+
+    '<button id="cbUse"></button>'+
+    '<button id="celebNext" style="background:rgba(4,8,18,.7);color:var(--text-dim);border-color:var(--border);margin-top:8px;"></button>';
+  openOverlay();
+  var el=document.getElementById("cbOut");
+  var li=0, ci=0, txt="";
+  (function type(){
+    if(li>=lines.length){
+      document.getElementById("cbUse").textContent=scramble("Titel anlegen",23);
+      document.getElementById("celebNext").textContent=scramble("Schliessen",29);
+      return;
+    }
+    var line=lines[li];
+    txt+=line.charAt(ci++);
+    el.textContent=txt+"\u2588";
+    if(ci>=line.length){ txt+="\n"; li++; ci=0; setTimeout(type,140); }
+    else setTimeout(type, 14+Math.random()*22);
+  })();
+  function cl(){ closeOverlay(); box.className="summary"; box.style.removeProperty("--cc"); renderAll(); }
+  document.getElementById("cbUse").addEventListener("click", function(){
+    S.title="codebreaker"; save(); renderHudTitle(); cl();
+  });
+  document.getElementById("celebNext").addEventListener("click", cl);
+  document.getElementById("popupX").addEventListener("click", cl);
+}
+
 /* ---------- Update-Neuigkeiten ---------- */
 var NEWS=[
+ {v:"2.4.0", t:"Liga-Fortschritt nach dem Workout", items:[
+   "Nach dem Abschluss zeigt ein Fenster alle Ligen, die sich verändert haben",
+   "Die Balken füllen oder leeren sich animiert, die Werte zählen mit"
+ ]},
+ {v:"2.3.3", t:"Stabile Ligen", items:[
+   "Ligen aktualisieren sich erst, wenn du das Workout abschließt – kein Springen mehr nach jedem Satz",
+   "Ligen-Tab weist darauf hin, wenn ein Workout noch offen ist",
+   scramble("Codebreaker",13)
+ ]},
  {v:"2.2.1", t:"Kleinere Verbesserungen", items:[
    "Workout-Kacheln auf der Startseite lassen sich durch Antippen der ganzen Kachel auf- und zuklappen"
  ]},
@@ -2624,7 +2813,7 @@ function myBoardEntry(){
   var t=S.title?titleById(S.title):null;
   return {name:(S.profile&&S.profile.name)?S.profile.name:null,
           level:levelFromXP(S.totalXP).level,
-          title:t?titleName(t):null,
+          title:t?titleDisplay(t):null,
           titleRarity:t?t.r:null,
           overall:os,
           groups:(function(){ var g={}; GROUPS.forEach(function(k){ if(sc[k]!==null&&sc[k]!==undefined) g[k]=sc[k]; }); return g; })(),
@@ -2945,7 +3134,7 @@ function renderHudTitle(){
     setThemeMeta("#04060d");
     return;
   }
-  el.textContent=titleName(t);
+  el.textContent=titleDisplay(t);
   el.className = t.r==="sonder" ? "shimmer" : "";
   el.style.color = t.r==="sonder" ? "" : RARITY[t.r].color;
   document.documentElement.style.setProperty("--accent", RARITY[t.r].color);
@@ -2964,11 +3153,11 @@ function titleListHTML(){
   var st=computeStats(), earned=earnedTitles(st);
   var q=titleQuery.trim().toLowerCase();
   /* seltenste unten */
-  var order=["beruecht","selten","episch","mythisch","legendaer","sonder"];
+  var order=["beruecht","selten","episch","mythisch","legendaer","sonder","geheim"];
   var anyBad=false;
   TITLES.forEach(function(t){ if(t.r==="beruecht" && earned[t.id]) anyBad=true; });
   var visible=TITLES.filter(function(t){ return ((t.r!=="beruecht" && !t.hidden) && (!t.avail||t.avail())) || earned[t.id]; });
-  var total=TITLES.filter(function(t){ return t.r!=="beruecht" && !t.hidden && (!t.avail||t.avail()); }).length +
+  var total=TITLES.filter(function(t){ return t.r!=="beruecht" && t.r!=="geheim" && !t.hidden && (!t.avail||t.avail()); }).length +
             visible.filter(function(t){ return t.r==="beruecht" || t.hidden; }).length;
   var got=Object.keys(earned).length;
 
@@ -2980,18 +3169,19 @@ function titleListHTML(){
   var list=visible.slice().sort(function(a,b){ return order.indexOf(a.r)-order.indexOf(b.r); });
   var shown=0, lastRar=null;
   list.forEach(function(t){
-    var name=titleName(t);
-    if(q && name.toLowerCase().indexOf(q)===-1) return;
+    var name=titleListName(t);
+    if(t.secret){ if(q) return; } else if(q && name.toLowerCase().indexOf(q)===-1) return;
     shown++;
     if(t.r!==lastRar){
-      html+='<div class="t-rarhead" style="color:'+RARITY[t.r].color+'">'+RARITY[t.r].label.toUpperCase()+'</div>';
+      if(RARITY[t.r].label) html+='<div class="t-rarhead" style="color:'+RARITY[t.r].color+'">'+RARITY[t.r].label.toUpperCase()+'</div>';
+      else html+='<div class="t-rarhead" style="color:'+RARITY[t.r].color+'">'+scramble("\u2014\u2014\u2014",41)+'</div>';
       lastRar=t.r;
     }
     var ok=!!earned[t.id];
     html+='<div class="t-row'+(ok?"":" locked")+(S.title===t.id?" active":"")+'"'+(ok?' data-id="'+t.id+'"':'')+'>'+
       '<span class="t-check">'+(S.title===t.id?"✓":"")+'</span>'+
       '<span class="t-main"><span class="t-name" style="color:'+(ok?RARITY[t.r].color:"var(--text-dim)")+'">'+name+'</span>'+
-      (ok&&t.d?'<span class="t-desc">'+t.d()+'</span>':'')+'</span></div>';
+      (ok&&t.d&&!t.secret?'<span class="t-desc">'+t.d()+'</span>':'')+'</span></div>';
   });
   if(shown===0) html+='<div class="t-empty">Kein Titel gefunden.</div>';
   return html;
@@ -3740,6 +3930,9 @@ document.getElementById("calibBtn").addEventListener("click", buildCalibrationEx
 document.getElementById("installBtn").addEventListener("click", function(){ openInstallInfo(true); });
 document.getElementById("supportBtn").addEventListener("click", openSupport);
 document.getElementById("historyBtn").addEventListener("click", openVersionHistory);
+document.getElementById("secRing").addEventListener("click", function(){ secretTap("ring"); });
+document.getElementById("secLogo").addEventListener("click", function(){ secretTap("logo"); });
+document.getElementById("secStreak").addEventListener("click", function(){ secretTap("streak"); });
 document.getElementById("verNum").textContent="Version "+APP_VERSION;
 document.getElementById("timerBtn").addEventListener("click", openTimer);
 document.getElementById("boardBtn").addEventListener("click", openLeaderboard);
@@ -3859,7 +4052,7 @@ document.getElementById("leagueInfoBtn").addEventListener("click", function(){
     '<h4>2 · VERGLEICH MIT DEM DURCHSCHNITT</h4>'+
     '<p>Dein bestes 1RM (letzte 90 Tage) wird durch einen Referenzwert geteilt: das, was ein durchschnittlich trainierter Mensch mit deinem Körpergewicht, Geschlecht und Alter bei dieser Übung schafft. Das Ergebnis ist der Score – 1,00 heißt exakt Durchschnitt.</p>'+
     '<p class="dim">Referenzen angelehnt an Daten von strengthlevel.com (Millionen geloggter Sätze). Frauen-Referenzen liegen je nach Muskelgruppe bei 58–72% der Männer-Werte; Pull-ups (83%) und Dips (80%) haben eigene Faktoren. Ab 35 sinkt die Referenz um 1% pro Jahr.</p>'+
-    '<h4>3 · ALLE ÜBUNGEN ZÄHLEN</h4>'+
+    '<h4>3 · ERST NACH DEM ABSCHLUSS</h4>'+'<p>Ein laufendes Workout fließt erst ein, wenn du es abschließt. Sonst würde die Liga nach jedem einzelnen Satz springen – nach der ersten Brustübung stünde dort Platin, nach der letzten Bauchübung wieder Silber.</p>'+'<h4>4 · ALLE ÜBUNGEN ZÄHLEN</h4>'+
     '<p>Pro Muskelgruppe werden alle geloggten Übungen zu einem gewichteten Durchschnitt verrechnet. Grundübungen zählen dabei mehr als Isolationsübungen (z.&nbsp;B. Bankdrücken stärker als Butterfly). Übungen, die du nie loggst, fließen nicht ein.</p>'+
     '<p class="dim">Wer auf jeder Übung genau den Durchschnittswert schafft, erhält Score 1,00 – also Gold-Mitte. Da der Durchschnitt über mehrere Übungen gebildet wird, fallen einzelne Paradeübungen weniger ins Gewicht als früher; dafür ist der Wert aussagekräftiger für die ganze Muskelgruppe.</p>'+
     '<h4>WIE VERLÄSSLICH IST DAS?</h4>'+
