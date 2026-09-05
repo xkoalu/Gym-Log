@@ -331,6 +331,12 @@
   .pe-count{font-family:var(--num);font-size:11px;color:var(--text-dim);flex:none;}
   .plan-day.open .plan-head{margin-bottom:9px;padding-bottom:8px;border-bottom:1px solid rgba(120,190,255,.16);}
   .plan-ex{display:flex;align-items:center;gap:9px;padding:7px 2px;font-size:12.5px;}
+  .pe-drag{flex:none;width:22px;text-align:center;color:var(--text-dim);font-size:15px;line-height:1;
+    cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none;}
+  .plan-ex.dragging{background:rgba(79,214,255,.14);border:1px solid var(--accent);
+    box-shadow:0 6px 20px -8px #000;padding-left:8px;padding-right:8px;}
+  .plan-ex.ph{background:rgba(79,214,255,.06);border:1px dashed var(--border);}
+  .pe-list{position:relative;}
   .pe-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .pe-grp{font-family:var(--mono);font-size:9.5px;color:var(--text-dim);flex:none;letter-spacing:.08em;}
   .pe-del{background:none;border:1px solid rgba(194,96,74,.5);color:var(--rust);font-size:14px;
@@ -806,7 +812,7 @@
 "use strict";
 
 var KEY = "gymlog_v2_state";
-var APP_VERSION = "2.4.0";
+var APP_VERSION = "2.5.1";
 
 /* ---------- Übungskatalog ----------
    bench = geschätztes 1RM eines durchschnittlich trainierten Mannes als Vielfaches
@@ -846,6 +852,7 @@ var CATALOG=[
 {id:"pullover",   g:"Rücken",n:"Überzüge am Kabelzug",                b:0.55, w:0.7},
 {id:"shrug",      g:"Rücken",n:"Shrugs / Nackenziehen",               b:1.30, w:0.6},
 {id:"lowback",    g:"Rücken",n:"Unterer Rücken (Maschine)",           b:1.00, w:0.6},
+{id:"hyperext",   g:"Rücken",n:"Rückenstrecker (Hyperextension)",     b:0.72, w:0.6, bw:0.45, gf:0.95},
 /* SCHULTERN */
 {id:"ohp",        g:"Schultern",n:"Schulterdrücken (Langhantel)",     b:0.85, w:1.5},
 {id:"shoulder_db",g:"Schultern",n:"Schulterdrücken (Kurzhantel)",     b:0.70, w:1.4, ps:1},
@@ -905,7 +912,7 @@ var TEMPLATES={
   ppl:{name:"Push / Pull / Legs", days:[
     {id:"push", name:"Push", ex:["bench_m","iso_chest","butterfly","dips","shoulder_p","biz_unten","biz_kopf","legraise"]},
     {id:"pull", name:"Pull", ex:["row_eng","row_breit","pu_breit","pu_eng","rev_bfly","seitheben","biz_masch","hammer","abs_masch"]},
-    {id:"legs", name:"Legs", ex:["legpress","legext","legcurl","adduktor","abduktor","calves","lowback"]}
+    {id:"legs", name:"Legs", ex:["legpress","legext","legcurl","adduktor","abduktor","calves","hyperext"]}
   ]},
   ul:{name:"Oberkörper / Unterkörper", days:[
     {id:"upper", name:"Oberkörper", ex:["bench_bb","row_bb","ohp","latpull","curl_bb","biz_unten","abs_masch"]},
@@ -2141,6 +2148,73 @@ function setDayMod(dayId, date, fn){
   S.dayMods=keep;
   save();
 }
+/* Reihenfolge per Ziehen ändern – funktioniert mit Finger und Maus */
+function enableReorder(listEl, day){
+  if(!listEl) return;
+  var rows=[].slice.call(listEl.querySelectorAll(".plan-ex"));
+  if(rows.length<2) return;
+  rows.forEach(function(row){
+    var handle=row.querySelector(".pe-drag");
+    if(!handle) return;
+    function start(ev){
+      ev.preventDefault(); ev.stopPropagation();
+      var startY=(ev.touches? ev.touches[0].clientY : ev.clientY);
+      var placeholder=document.createElement("div");
+      placeholder.className="plan-ex ph";
+      placeholder.style.height=row.offsetHeight+"px";
+      var rect=row.getBoundingClientRect();
+      row.classList.add("dragging");
+      row.style.width=rect.width+"px";
+      row.style.position="fixed";
+      row.style.left=rect.left+"px";
+      row.style.top=rect.top+"px";
+      row.style.zIndex="50";
+      listEl.insertBefore(placeholder, row);
+      document.body.style.userSelect="none";
+
+      function move(e){
+        var y=(e.touches? e.touches[0].clientY : e.clientY);
+        if(e.cancelable) e.preventDefault();
+        row.style.top=(rect.top+(y-startY))+"px";
+        var others=[].slice.call(listEl.querySelectorAll(".plan-ex")).filter(function(x){ return x!==row && x!==placeholder; });
+        for(var i=0;i<others.length;i++){
+          var r=others[i].getBoundingClientRect(), mid=r.top+r.height/2;
+          if(y<mid){ listEl.insertBefore(placeholder, others[i]); return; }
+        }
+        listEl.appendChild(placeholder);
+      }
+      function end(){
+        document.removeEventListener("touchmove", move, {passive:false});
+        document.removeEventListener("mousemove", move);
+        document.removeEventListener("touchend", end);
+        document.removeEventListener("mouseup", end);
+        document.body.style.userSelect="";
+        row.classList.remove("dragging");
+        row.style.position=""; row.style.top=""; row.style.left="";
+        row.style.width=""; row.style.zIndex="";
+        listEl.insertBefore(row, placeholder);
+        if(placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
+        var order=[].slice.call(listEl.querySelectorAll(".plan-ex"))
+                   .map(function(x){ return x.getAttribute("data-id"); })
+                   .filter(Boolean);
+        if(order.length===day.ex.length && order.join()!==day.ex.join()){
+          day.ex=order;
+          rebuildEX(); save(); renderExList();
+          buzz(8);
+          toast("Reihenfolge geändert");
+        }
+        renderPlanEditor();
+      }
+      document.addEventListener("touchmove", move, {passive:false});
+      document.addEventListener("mousemove", move);
+      document.addEventListener("touchend", end);
+      document.addEventListener("mouseup", end);
+    }
+    handle.addEventListener("touchstart", start, {passive:false});
+    handle.addEventListener("mousedown", start);
+  });
+}
+
 function openDayPicker(dayId, origId){
   var date=today();
   var box=document.getElementById("summaryBox");
@@ -2436,6 +2510,11 @@ function openCodebreaker(){
 
 /* ---------- Update-Neuigkeiten ---------- */
 var NEWS=[
+ {v:"2.5.1", t:"Reihenfolge im Trainingsplan", items:[
+   "Übungen lassen sich im Plan über das Symbol ≡ per Ziehen umsortieren",
+   "Die neue Reihenfolge gilt sofort im Training",
+   "Neue Übung: Rückenstrecker (Hyperextension) – zählt als Körpergewichtsübung"
+ ]},
  {v:"2.4.0", t:"Liga-Fortschritt nach dem Workout", items:[
    "Nach dem Abschluss zeigt ein Fenster alle Ligen, die sich verändert haben",
    "Die Balken füllen oder leeren sich animiert, die Werte zählen mit"
@@ -2675,6 +2754,7 @@ tbar:{p:["lat"],s:["biceps","traps","lowback"]},
 pullover:{p:["lat"],s:["chest","triceps"]},
 shrug:{p:["traps"],s:["forearm"]},
 lowback:{p:["lowback"],s:["glutes"]},
+hyperext:{p:["lowback"],s:["glutes","hams"]},
 ohp:{p:["delt_f"],s:["triceps","traps","abs"]},
 shoulder_db:{p:["delt_f"],s:["triceps","traps"]},
 shoulder_p:{p:["delt_f"],s:["triceps"]},
@@ -3456,12 +3536,16 @@ function renderPlanEditor(){
     if(open){
       list=d.ex.map(function(id){
         var c=CAT_BY_ID[id]; if(!c) return "";
-        return '<div class="plan-ex" data-id="'+id+'"><span class="ex-dot" style="background:'+
-               GROUP_COLORS[c.g]+'"></span><span class="pe-name">'+c.n+'</span>'+
+        return '<div class="plan-ex" data-id="'+id+'">'+
+               '<span class="pe-drag" aria-label="verschieben">\u2261</span>'+
+               '<span class="ex-dot" style="background:'+GROUP_COLORS[c.g]+'"></span>'+
+               '<span class="pe-name">'+c.n+'</span>'+
                '<span class="pe-grp">'+c.g+'</span><button class="pe-del">\u2212</button></div>';
       }).join("");
+      list='<div class="pe-list">'+list+'</div>';
       if(!d.ex.length) list='<div class="t-empty">Noch keine Übungen an diesem Tag.</div>';
       list+='<button class="add-set pe-add">+ Übung hinzufügen</button>';
+      if(d.ex.length>1) list+='<p class="note" style="margin:6px 0 0;font-size:10.5px;">Reihenfolge über das Symbol \u2261 ziehen.</p>';
     }
     card.innerHTML='<div class="plan-head"><input class="pe-title" value="'+d.name.replace(/"/g,"&quot;")+'" maxlength="18">'+
       '<span class="pe-count">'+d.ex.length+'</span><span class="chev">\u25BE</span></div>'+list;
@@ -3485,6 +3569,7 @@ function renderPlanEditor(){
       card.querySelector(".pe-add").addEventListener("click", function(ev){
         ev.stopPropagation(); openPicker(d);
       });
+      enableReorder(card.querySelector(".pe-list"), d);
     }
     wrap.appendChild(card);
   });
