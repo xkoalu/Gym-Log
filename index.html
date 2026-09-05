@@ -812,7 +812,7 @@
 "use strict";
 
 var KEY = "gymlog_v2_state";
-var APP_VERSION = "2.5.1";
+var APP_VERSION = "2.5.2";
 
 /* ---------- Übungskatalog ----------
    bench = geschätztes 1RM eines durchschnittlich trainierten Mannes als Vielfaches
@@ -2399,11 +2399,15 @@ function openLeagueProgress(rows, done){
     '<button id="closeOverlay">Weiter</button>';
   openOverlay();
 
-  var t0=null, DUR=1100;
-  function ease(x){ return 1-Math.pow(1-x,3); }
+  var t0=null, DUR=3200, HOLD=450;   /* kurz auf dem alten Stand verharren, dann langsam füllen */
+  function ease(x){
+    /* sanft anfahren und ausrollen, damit die Veränderung gut ablesbar bleibt */
+    return x<0.5 ? 4*x*x*x : 1-Math.pow(-2*x+2,3)/2;
+  }
   function frame(ts){
     if(t0===null) t0=ts;
-    var p=Math.min(1,(ts-t0)/DUR), e=ease(p);
+    var raw=(ts-t0-HOLD)/DUR;
+    var p=Math.max(0, Math.min(1, raw)), e=ease(p);
     rows.forEach(function(r,i){
       var fromV=r.from===null?0:r.from, v=fromV+(r.to-fromV)*e;
       var fEl=document.getElementById("lpf"+i), vEl=document.getElementById("lpv"+i);
@@ -2413,7 +2417,7 @@ function openLeagueProgress(rows, done){
         vEl.textContent=v.toFixed(2).replace(".",",")+"  "+(d>=0?"+":"\u2212")+Math.abs(d).toFixed(2).replace(".",",");
       }
     });
-    if(p<1) requestAnimationFrame(frame);
+    if(raw<1) requestAnimationFrame(frame);
   }
   if(window.requestAnimationFrame) requestAnimationFrame(frame);
   else rows.forEach(function(r,i){
@@ -2510,7 +2514,7 @@ function openCodebreaker(){
 
 /* ---------- Update-Neuigkeiten ---------- */
 var NEWS=[
- {v:"2.5.1", t:"Reihenfolge im Trainingsplan", items:[
+ {v:"2.5.2", t:"Reihenfolge im Trainingsplan", items:[
    "Übungen lassen sich im Plan über das Symbol ≡ per Ziehen umsortieren",
    "Die neue Reihenfolge gilt sofort im Training",
    "Neue Übung: Rückenstrecker (Hyperextension) – zählt als Körpergewichtsübung"
