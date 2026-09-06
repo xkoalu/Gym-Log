@@ -812,7 +812,7 @@
 "use strict";
 
 var KEY = "gymlog_v2_state";
-var APP_VERSION = "2.5.2";
+var APP_VERSION = "2.5.3";
 
 /* ---------- Übungskatalog ----------
    bench = geschätztes 1RM eines durchschnittlich trainierten Mannes als Vielfaches
@@ -1289,6 +1289,10 @@ function addDays(iso,n){
   var d=new Date(iso+"T12:00:00"); d.setDate(d.getDate()+n); return localISO(d);
 }
 
+function activeGroups(){
+  var runOn = !!(S.plan && S.plan.run);
+  return GROUPS.filter(function(g){ return runOn || g!=="Ausdauer"; });
+}
 function planDayIds(){ return (S.plan?S.plan.days:[]).map(function(d){return d.id;}); }
 function planDay(id){ var ds=(S.plan?S.plan.days:[]); for(var i=0;i<ds.length;i++) if(ds[i].id===id) return ds[i]; return null; }
 function planHas(ids){ for(var i=0;i<ids.length;i++){ for(var j=0;j<EX.length;j++) if(EX[j].id===ids[i]) return true; } return false; }
@@ -1475,7 +1479,7 @@ function computeStats(){
     var b=-1; GROUPS.forEach(function(g){ if(st.peak(g)>b) b=st.peak(g); }); return b;
   };
   st.groupsAtLeast=function(idx){
-    var n=0; GROUPS.forEach(function(g){ if(st.peak(g)>=idx) n++; }); return n;
+    var n=0; activeGroups().forEach(function(g){ if(st.peak(g)>=idx) n++; }); return n;
   };
   /* --- Tages-Serie, Pausen, Auffälligkeiten --- */
   var ds=Object.keys(st.dates).sort();
@@ -1578,6 +1582,7 @@ function updateLeaguePeak(){
   GROUPS.forEach(function(g){
     if(S.leaguePeak[g]!==undefined && (!lastTs[g] || lastTs[g]<decayCut)) delete S.leaguePeak[g];
   });
+  if(!(S.plan && S.plan.run)) delete S.leaguePeak["Ausdauer"];
 
   var sc=groupScores(); if(!sc) return [];
   var proms=[];
@@ -1636,8 +1641,8 @@ function buildAchievements(st){
     once("LIGEN",t[2],t[0]+"-Liga","Erreiche in einer Muskelgruppe die "+t[0]+"-Liga",best,t[1]);
   });
   (function(){
-    var n=0; GROUPS.forEach(function(g){ if(st.peak(g)>=2) n++; });
-    once("LIGEN","stars","Allrounder","Alle Kategorien mindestens in Gold",n,GROUPS.length);
+    var n=0; activeGroups().forEach(function(g){ if(st.peak(g)>=2) n++; });
+    once("LIGEN","stars","Allrounder","Alle Kategorien mindestens in Gold",n,activeGroups().length);
   })();
   /* Übungs-Meilensteine: je Muskelgruppe die wichtigste Übung des eigenen Plans,
      Zielgewichte aus deren Referenzwert abgeleitet (Weg A) */
@@ -1794,8 +1799,8 @@ var TITLES = [
   {id:"vollstaend", r:"selten", m:"Der Vollständige",    w:"Die Vollständige",    d:function(){return "10× ein Trainingsprogramm vollständig geloggt";}, f:function(st){return st.completeDays>=10;}},
   {id:"vertikal",   r:"selten", avail:function(){return planHas(["pu_breit","pu_eng","chinup"]);}, m:"Vertikal Erhoben",    w:"Vertikal Erhoben",    d:function(){return "Klimmzüge mit "+G(20,10)+" kg Zusatzgewicht";}, f:function(st){return st.maxExW(["pu_breit","pu_eng","chinup"])>=G(20,10);}},
   {id:"schwerkraft",r:"selten", avail:function(){return planHas(["dips"]);}, m:"Schwerkraftverächter",w:"Schwerkraftverächterin",d:function(){return "Dips mit "+G(40,20)+" kg Zusatzgewicht";}, f:function(st){return st.maxExW(["dips"])>=G(40,20);}},
-  {id:"schwaechste",r:"selten", m:"Die schwächste Waffe der Menschheit", w:"Die schwächste Waffe der Menschheit", d:function(){return "Alle Kategorien mindestens in Bronze";}, f:function(st){return st.groupsAtLeast(0)>=GROUPS.length;}},
-  {id:"spieler",    r:"selten", m:"Der Spieler",         w:"Die Spielerin",       d:function(){return "Alle Kategorien mindestens in Silber";}, f:function(st){return st.groupsAtLeast(1)>=GROUPS.length;}},
+  {id:"schwaechste",r:"selten", m:"Die schwächste Waffe der Menschheit", w:"Die schwächste Waffe der Menschheit", d:function(){return "Alle Kategorien mindestens in Bronze";}, f:function(st){return st.groupsAtLeast(0)>=activeGroups().length;}},
+  {id:"spieler",    r:"selten", m:"Der Spieler",         w:"Die Spielerin",       d:function(){return "Alle Kategorien mindestens in Silber";}, f:function(st){return st.groupsAtLeast(1)>=activeGroups().length;}},
   {id:"ausdauernd", avail:function(){return !!(S.plan&&S.plan.run);}, r:"selten", m:"Der Ausdauernde",    w:"Die Ausdauernde",     d:function(){return "Insgesamt 100 km gelaufen";}, f:function(st){return st.totalKm>=100;}},
   {id:"zehnkm", avail:function(){return !!(S.plan&&S.plan.run);},     r:"selten", m:"Zehnkilometerläufer",w:"Zehnkilometerläuferin",d:function(){return "Einmal 10 km am Stück gelaufen";}, f:function(st){return st.maxKm>=10;}},
   /* EPISCH */
@@ -1808,7 +1813,7 @@ var TITLES = [
   {id:"unsterbl",   r:"episch", m:"Der Unsterbliche",    w:"Die Unsterbliche",    d:function(){return "14 Tage am Stück ohne Pause trainiert";}, f:function(st){return st.maxDayStreak>=14;}},
   {id:"bestaendig", avail:function(){return !!(S.plan&&S.plan.run);}, r:"episch", m:"Der Beständige",      w:"Die Beständige",      d:function(){return "Insgesamt 500 km gelaufen";}, f:function(st){return st.totalKm>=500;}},
   {id:"halbdist", avail:function(){return !!(S.plan&&S.plan.run);},   r:"episch", m:"Halbdistanzler",      w:"Halbdistanzlerin",    d:function(){return "Einmal 21,1 km am Stück gelaufen";}, f:function(st){return st.maxKm>=21.1;}},
-  {id:"schattenjg", r:"episch", m:"Der Schattenjäger",   w:"Die Schattenjägerin", d:function(){return "Alle Kategorien mindestens in Gold";}, f:function(st){return st.groupsAtLeast(2)>=GROUPS.length;}},
+  {id:"schattenjg", r:"episch", m:"Der Schattenjäger",   w:"Die Schattenjägerin", d:function(){return "Alle Kategorien mindestens in Gold";}, f:function(st){return st.groupsAtLeast(2)>=activeGroups().length;}},
   /* MYTHISCH */
   {id:"herrscher",  r:"mythisch",m:"Herrscher der Schwerkraft",w:"Herrscherin der Schwerkraft",d:function(){return "Meister-Liga in einer Muskelgruppe";}, f:function(st){return st.bestLeague()>=5;}},
   {id:"ewig",       r:"mythisch",m:"Der Ewige",          w:"Die Ewige",           d:function(){return "52 Wochen in Folge trainiert";}, f:function(st){return st.maxWeekStreak>=52;}},
@@ -1817,7 +1822,7 @@ var TITLES = [
   {id:"erwacht",    r:"mythisch",m:"Der Erwachte",       w:"Die Erwachte",        d:function(){return "Level 25 erreicht";}, f:function(st){return st.level>=25;}},
   {id:"distanzfr", avail:function(){return !!(S.plan&&S.plan.run);},  r:"mythisch",m:"Distanzfresser",     w:"Distanzfresserin",    d:function(){return "Insgesamt 1.000 km gelaufen";}, f:function(st){return st.totalKm>=1000;}},
   {id:"marathon", avail:function(){return !!(S.plan&&S.plan.run);},   r:"mythisch",m:"Der Marathonier",    w:"Die Marathonierin",   d:function(){return "Einmal 42,2 km am Stück gelaufen";}, f:function(st){return st.maxKm>=42.2;}},
-  {id:"schattenwd", r:"mythisch",m:"Der Schattenwandler",w:"Die Schattenwandlerin",d:function(){return "Alle Kategorien mindestens in Platin";}, f:function(st){return st.groupsAtLeast(3)>=GROUPS.length;}},
+  {id:"schattenwd", r:"mythisch",m:"Der Schattenwandler",w:"Die Schattenwandlerin",d:function(){return "Alle Kategorien mindestens in Platin";}, f:function(st){return st.groupsAtLeast(3)>=activeGroups().length;}},
   /* LEGENDÄR */
   {id:"koloss",     r:"legendaer",m:"Kolossbrecher",     w:"Kolossbrecherin",     d:function(){return "Ein einzelner Satz mit über "+G(300,180)+" kg Gesamtlast";}, f:function(st){return st.maxSetLoad>=G(300,180);}},
   {id:"nachtw",     r:"legendaer",m:"Nachtwandler",      w:"Nachtwandlerin",      d:function(){return "An 20 Tagen nach 21 Uhr trainiert";}, f:function(st){return st.lateDays>=20;}},
@@ -1825,11 +1830,11 @@ var TITLES = [
   {id:"zweisonnen", r:"legendaer",m:"Wandler zweier Sonnen",w:"Wandlerin zweier Sonnen",d:function(){return "Alle Trainingstage deines Plans an einem einzigen Tag vollständig";}, f:function(st){return st.tripleDay;}},
   {id:"unmoeglich", r:"legendaer",m:"Der Unmögliche",    w:"Die Unmögliche",      d:function(){return "An einem Tag "+kg(G(10000,6000))+" nur mit Bauchübungen bewegt";}, f:function(st){return st.absOnlyDayVol>=G(10000,6000);}},
   {id:"windbrecher", avail:function(){return !!(S.plan&&S.plan.run);},r:"legendaer",m:"Windbrecher",       w:"Windbrecherin",       d:function(){return "5 km unter "+Math.floor(G(1200,1380)/60)+":00 gelaufen";}, f:function(st){return st.fastFive(G(1200,1380));}},
-  {id:"schattenf",   r:"legendaer",m:"Schattenfürst",     w:"Schattenfürstin",     d:function(){return "Alle Kategorien mindestens in Diamant";}, f:function(st){return st.groupsAtLeast(4)>=GROUPS.length;}},
+  {id:"schattenf",   r:"legendaer",m:"Schattenfürst",     w:"Schattenfürstin",     d:function(){return "Alle Kategorien mindestens in Diamant";}, f:function(st){return st.groupsAtLeast(4)>=activeGroups().length;}},
   {id:"namenlos",   r:"legendaer",m:"Der Namenlose",     w:"Die Namenlose",       d:function(){return "Alle anderen Titel gesammelt";}, f:function(){return false;}},
   /* SONDERSTUFE */
   {id:"vollkommen",r:"sonder", hidden:true, m:"Der Vollkommene",  w:"Die Vollkommene",     d:function(){return "Alle Erfolge der App freigeschaltet";}, f:function(st){return st.allAchDone();}},
-  {id:"monarch",    r:"sonder",  m:"Schattenmonarch",    w:"Schattenmonarchin",   d:function(){return "Alle Kategorien in der Meister-Liga";}, f:function(st){return st.groupsAtLeast(5)>=GROUPS.length;}},
+  {id:"monarch",    r:"sonder",  m:"Schattenmonarch",    w:"Schattenmonarchin",   d:function(){return "Alle Kategorien in der Meister-Liga";}, f:function(st){return st.groupsAtLeast(5)>=activeGroups().length;}},
   /* BERÜCHTIGT (versteckt bis freigeschaltet) */
   {id:"codebreaker",r:"geheim", hidden:true, secret:true, m:"Codebreaker", w:"Codebreakerin",
    d:function(){return "Du hast den Code gebrochen.";},
@@ -2361,7 +2366,7 @@ function openTimer(){
 /* ---------- Liga-Fortschritt nach dem Workout ---------- */
 function leagueDelta(before, after){
   var rows=[];
-  GROUPS.forEach(function(g){
+  activeGroups().forEach(function(g){
     var b=(before&&before[g]!==null&&before[g]!==undefined)?before[g]:null;
     var a=(after&&after[g]!==null&&after[g]!==undefined)?after[g]:null;
     if(a===null) return;
@@ -2514,10 +2519,11 @@ function openCodebreaker(){
 
 /* ---------- Update-Neuigkeiten ---------- */
 var NEWS=[
- {v:"2.5.2", t:"Reihenfolge im Trainingsplan", items:[
+ {v:"2.5.3", t:"Reihenfolge im Trainingsplan", items:[
    "Übungen lassen sich im Plan über das Symbol ≡ per Ziehen umsortieren",
    "Die neue Reihenfolge gilt sofort im Training",
-   "Neue Übung: Rückenstrecker (Hyperextension) – zählt als Körpergewichtsübung"
+   "Neue Übung: Rückenstrecker (Hyperextension) – zählt als Körpergewichtsübung",
+   "Ohne Laufen zählt die Ausdauer nicht mehr für Ligen und Titel"
  ]},
  {v:"2.4.0", t:"Liga-Fortschritt nach dem Workout", items:[
    "Nach dem Abschluss zeigt ein Fenster alle Ligen, die sich verändert haben",
@@ -2888,7 +2894,7 @@ var LEADERBOARD={
 function overallScore(){
   var sc=groupScores(); if(!sc) return null;
   var sum=0,n=0;
-  GROUPS.forEach(function(g){ if(sc[g]!==null&&sc[g]!==undefined){ sum+=sc[g]; n++; } });
+  activeGroups().forEach(function(g){ if(sc[g]!==null&&sc[g]!==undefined){ sum+=sc[g]; n++; } });
   return n?sum/n:null;
 }
 function myBoardEntry(){
@@ -2900,7 +2906,7 @@ function myBoardEntry(){
           title:t?titleDisplay(t):null,
           titleRarity:t?t.r:null,
           overall:os,
-          groups:(function(){ var g={}; GROUPS.forEach(function(k){ if(sc[k]!==null&&sc[k]!==undefined) g[k]=sc[k]; }); return g; })(),
+          groups:(function(){ var g={}; activeGroups().forEach(function(k){ if(sc[k]!==null&&sc[k]!==undefined) g[k]=sc[k]; }); return g; })(),
           me:true};
 }
 
@@ -2924,7 +2930,7 @@ function openLeaderboard(){
     return out.sort(function(a,b){ return b.score-a.score; });
   }
 
-  var views=["gesamt"].concat(GROUPS);
+  var views=["gesamt"].concat(activeGroups());
   function viewColor(v){ return v==="gesamt" ? "var(--accent)" : GROUP_COLORS[v]; }
 
   /* Fenster einmal aufbauen – danach wird nur noch die Liste ausgetauscht */
@@ -3789,7 +3795,7 @@ function renderLeagues(){
     wrap.innerHTML='<p class="empty">Leg zuerst dein Profil an (Geschlecht, Alter, Gewicht), damit die Ligen berechnet werden können.</p>'; return;
   }
   var scores=groupScores();
-  GROUPS.forEach(function(g){
+  activeGroups().forEach(function(g){
     var sc=scores[g];
     var card=document.createElement("div"); card.className="league-card";
     if(sc===null){
@@ -4099,7 +4105,7 @@ document.getElementById("statusBtn").addEventListener("click", function(){
   rows+=row("Volumen gesamt", fmt(st.totalVol)+" kg");
   if(st.runCount) rows+=row("Laufstrecke", st.totalKm.toFixed(1).replace(".",",")+" km");
   var lg="";
-  GROUPS.forEach(function(g){
+  activeGroups().forEach(function(g){
     var peak=st.peak(g);
     var cur=sc?sc[g]:null;
     var nm = peak>=0 ? LEAGUES[peak].name : "–";
