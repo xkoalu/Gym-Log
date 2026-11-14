@@ -1037,21 +1037,19 @@
     animation:spArcIn .6s ease 1.2s forwards;}
   .arise-name{font-size:24px;font-weight:800;letter-spacing:.14em;margin-top:6px;opacity:0;animation:spArcIn .6s ease 1.45s forwards;}
   .arise-sub{font-size:12px;color:var(--text-dim);margin:6px 0 12px;opacity:0;animation:spArcIn .6s ease 1.7s forwards;}
-  /* Optik-Stufen des aktiven Schattens (Farben nur außerhalb großer Events) */
-  body.sh-r1:not(.winter) .ring-fill{stroke:var(--sh);}
-  body.sh-r1:not(.winter) .xp-bar-fill{background:linear-gradient(90deg,var(--sh),rgba(255,255,255,.85));}
-  body.sh-r2 .ring-wrap svg{filter:drop-shadow(0 0 4px var(--sh)) drop-shadow(0 0 10px var(--sh));}
+  /* Optik-Stufen: Effekte leuchten immer in der App-Farbe (Titel oder – ab Elite wählbar – Schatten) */
+  body.sh-r2 .ring-wrap > svg{filter:drop-shadow(0 0 4px var(--accent)) drop-shadow(0 0 10px var(--accent));}
   .sh-parts{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
-  .sh-parts i{position:absolute;bottom:-8px;width:5px;height:5px;border-radius:50%;background:var(--sh);
-    box-shadow:0 0 8px var(--sh);opacity:0;animation:shPart 2.6s ease-out forwards;}
+  .sh-parts i{position:absolute;bottom:-8px;width:5px;height:5px;border-radius:50%;background:var(--accent);
+    box-shadow:0 0 8px var(--accent);opacity:0;animation:shPart 2.6s ease-out forwards;}
   @keyframes shPart{0%{opacity:0;transform:translateY(0);}15%{opacity:.9;}100%{opacity:0;transform:translateY(-280px);}}
   #splash.shadow{background-image:radial-gradient(120% 70% at 50% 45%, var(--shg), transparent 70%);}
   #splash.shadow .sp-arc{display:block;color:var(--sh);text-shadow:0 0 12px var(--sh);animation:spArcIn .6s ease .7s forwards;}
   body.sh-r5 .hud-titlebtn{position:relative;}
-  body.sh-r5 .hud-titlebtn::after{content:"";position:absolute;inset:-2px -5px;border:1px solid var(--sh);border-radius:6px;
+  body.sh-r5 .hud-titlebtn::after{content:"";position:absolute;inset:-2px -5px;border:1px solid var(--accent);border-radius:6px;
     pointer-events:none;animation:shFrame 3.2s ease-in-out infinite;}
   body.sh-r6 .hud-titlebtn::after{border-color:#eef2fa;animation-duration:2.2s;}
-  @keyframes shFrame{0%,100%{opacity:.3;box-shadow:0 0 0 transparent;}50%{opacity:1;box-shadow:0 0 10px var(--sh);}}
+  @keyframes shFrame{0%,100%{opacity:.3;box-shadow:0 0 0 transparent;}50%{opacity:1;box-shadow:0 0 10px var(--accent);}}
   @media (prefers-reduced-motion:reduce){
     .arise-sig,.arise-txt,.arise-name,.arise-sub{animation:none;opacity:1;transform:none;}
     body.sh-r5 .hud-titlebtn::after{animation:none;opacity:.8;}
@@ -1072,6 +1070,26 @@
   .set-row-lbl{font-size:12.5px;margin:6px 0 8px;color:var(--text);}
   .set-row-lbl small{display:block;color:var(--text-dim);font-size:11px;margin-top:2px;line-height:1.4;}
   #setRest{margin-bottom:2px;}
+
+  /* ---------- 3.1.1: Schattenarmee im Charakterbogen ---------- */
+  .sh-badge{position:absolute;right:-5px;bottom:-5px;width:27px;height:27px;border-radius:50%;z-index:3;padding:0;margin:0;
+    display:flex;align-items:center;justify-content:center;background:#070b16;border:1px solid var(--bc);
+    box-shadow:0 0 8px var(--bcg);cursor:pointer;}
+  .ring-wrap .sh-badge svg{transform:none;width:15px;height:15px;stroke:var(--bc);fill:none;stroke-width:1.9;
+    stroke-linecap:round;stroke-linejoin:round;}
+  .sh-chip{position:absolute;top:10px;right:14px;z-index:5;display:inline-flex;align-items:center;gap:5px;min-height:28px;
+    background:rgba(4,8,18,.55);border:1px solid rgba(201,184,255,.5);color:#c9b8ff;border-radius:999px;margin:0;
+    font-family:var(--num);font-size:12px;font-weight:700;letter-spacing:.02em;padding:5px 11px 5px 10px;line-height:1;cursor:pointer;}
+  .sh-chip.ready::after{content:"";position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;
+    background:#c9b8ff;box-shadow:0 0 0 2px #070b16,0 0 8px #c9b8ff;}
+  #hudName{padding-right:84px;}
+  body.sh-color #hudTitle.shimmer,body.sh-color #hudTitle.shimmer-ice{
+    background-image:linear-gradient(90deg,var(--accent),#ffffff,var(--accent));}
+  .summary.sh-ask{text-align:center;}
+  .sh-ask .sh-sig{margin:6px auto 12px;width:58px;height:58px;}
+  .sh-ask .sh-sig svg{width:30px;height:30px;}
+  .sh-ask p{font-size:12.5px;color:var(--text-dim);line-height:1.5;margin:0 0 14px;}
+  .sh-ask p small{display:block;margin-top:6px;font-size:11px;}
 </style>
 </head>
 <body>
@@ -1094,12 +1112,14 @@
 
   <header class="hud brackets">
     <button class="status-tab" id="statusBtn">STATUS</button>
+    <button class="sh-chip" id="shChip" type="button" aria-label="Schattenarmee öffnen"></button>
     <div class="ring-wrap" id="secRing">
       <svg width="72" height="72" viewBox="0 0 72 72">
         <circle class="ring-track" cx="36" cy="36" r="30"></circle>
         <circle class="ring-fill" id="ringFill" cx="36" cy="36" r="30" stroke-dasharray="0 189"></circle>
       </svg>
       <div class="ring-level"><div class="num" id="levelNum">1</div><div class="lbl">LVL</div></div>
+      <button class="sh-badge" id="shBadge" type="button" aria-label="Schattenarmee öffnen" style="display:none"></button>
     </div>
     <div class="hud-info">
       <div class="hud-title" id="hudName">GYM.LOG</div>
@@ -1177,10 +1197,6 @@
   <div class="tab" id="tab-profile">
     <div id="profileMain">
     <div class="prof-bar"><button class="gear-btn" id="settingsBtn" aria-label="Einstellungen"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/><circle cx="12" cy="12" r="6.6"/></svg>EINSTELLUNGEN</button></div>
-    <section id="shadowSec">
-      <h2>SCHATTENARMEE</h2>
-      <div class="card sh-card" id="shadowCard"></div>
-    </section>
     <section>
       <h2>PROFIL</h2>
       <div class="card">
@@ -1231,6 +1247,8 @@
         <div class="chart-title">DARSTELLUNG</div>
         <button class="ghost-btn" id="winterBtn" style="display:none"></button>
         <button class="ghost-btn" id="shadowFxBtn"></button>
+        <button class="ghost-btn" id="shColorBtn" style="display:none"></button>
+        <p class="note" id="shColorNote" style="display:none;margin-top:6px;font-size:11px;">Solange die Winter-Optik an ist, gelten ihre Farben – die Schattenfarbe greift danach wieder.</p>
       </div>
       <div class="card set-card">
         <div class="chart-title">TRAINING</div>
@@ -1278,7 +1296,7 @@
 "use strict";
 
 var KEY = "gymlog_v2_state";
-var APP_VERSION = "3.1.0";
+var APP_VERSION = "3.1.1";
 
 /* ---------- Übungskatalog ----------
    bench = geschätztes 1RM eines durchschnittlich trainierten Mannes als Vielfaches
@@ -1460,7 +1478,7 @@ var LEAGUES = [
 ];
 
 /* ---------- State ---------- */
-function def(){ return {plan:defaultPlan(), profile:null, calibAsked:0, calibOptOut:false, installAsked:0, installOptOut:false, events:[], dayMods:{}, restSeconds:180, shadow:{spent:0, owned:{}, active:null}, newsSeen:null, codebreaker:false, arcs:{}, winterTheme:true, totalXP:0, streak:0, lastLogDate:null, finishedDates:[], finishLog:[], entries:[], lastInputs:{}, leaguePeak:{}, achSeen:{}, titlesSeen:{}, title:null}; }
+function def(){ return {plan:defaultPlan(), profile:null, calibAsked:0, calibOptOut:false, installAsked:0, installOptOut:false, events:[], dayMods:{}, restSeconds:180, shadow:{spent:0, owned:{}, active:null, hoardFrom:0}, shColor:false, shColorAsked:false, newsSeen:null, codebreaker:false, arcs:{}, winterTheme:true, totalXP:0, streak:0, lastLogDate:null, finishedDates:[], finishLog:[], entries:[], lastInputs:{}, leaguePeak:{}, achSeen:{}, titlesSeen:{}, title:null}; }
 function load(){
   try{ var r=localStorage.getItem(KEY); if(!r) return def();
     var p=JSON.parse(r); var st=Object.assign(def(), p);
@@ -2423,6 +2441,22 @@ function buildAchievements(st){
   [10,50].forEach(function(n){
     once("LAUF-KONSTANZ","shoe",n+" Läufe","Insgesamt "+n+" Laufeinheiten geloggt",st.runCount,n);
   }); }
+  /* Schattenarmee – alles einmalig */
+  (function(){
+    var sh=shOf(st);
+    [[1,"Erhebe dich","Deinen ersten Schatten erweckt"],[3,"Erster Trupp","3 Schatten erweckt"],
+     [6,"Kompanie der Schatten","6 Schatten erweckt"],[9,"Vollzählig","Alle neun Schatten erweckt"]].forEach(function(t){
+      once("SCHATTENARMEE","arise",t[1],t[2],sh.owned,t[0]);
+    });
+    [[1,"Beförderung","Elite","rank1"],[2,"Ritterschlag","Ritter","rank2"],[4,"Generalstab","General","rank3"],
+     [5,"Marschallstab","Marschall","rank5"]].forEach(function(t){
+      once("SCHATTENARMEE",t[3],t[1],"Einen Schatten auf Rang "+t[2]+" gebracht",Math.max(0,sh.maxR),t[0]);
+    });
+    [[100,"Splitter"],[500,"Schattenstrom"],[1000,"Schattenflut"],[2500,"Schattenmeer"]].forEach(function(t){
+      once("SCHATTENARMEE","frag",t[1],"Insgesamt "+fmt(t[0])+" Schattenfragmente verdient",sh.earned,t[0]);
+    });
+    once("SCHATTENARMEE","harvest","Schattenernte","An einem Trainingstag mindestens 10 Schattenfragmente verdient",sh.bestDay,10);
+  })();
   /* Vollendung: alle übrigen Erfolge freigeschaltet */
   var totalOthers=A.length, doneOthers=0;
   A.forEach(function(a){
@@ -2486,7 +2520,11 @@ seal:'<circle cx="12" cy="9" r="5.5"/><path d="M9 14l-1.5 7 4.5-2.5 4.5 2.5-1.5-
 arrowup:'<path d="M12 19V5M6 11l6-6 6 6"/><path d="M5 21h14"/>',
 alarm:'<circle cx="12" cy="13" r="7"/><path d="M12 9.5V13l2.5 2M4.5 4.5L2.5 6.5M19.5 4.5l2 2"/>',
 lock:'<rect x="5" y="11" width="14" height="10" rx="1"/><path d="M8 11V7.5a4 4 0 018 0V11"/>',
-unlock:'<rect x="5" y="11" width="14" height="10" rx="1"/><path d="M8 11V7.5a4 4 0 017.7-1.5"/>'
+unlock:'<rect x="5" y="11" width="14" height="10" rx="1"/><path d="M8 11V7.5a4 4 0 017.7-1.5"/>',
+/* Schattenarmee */
+arise:'<path d="M12 18V6M7.5 10.5L12 6l4.5 4.5"/><path d="M4 20.5c2.5-1.6 5.2-2.4 8-2.4s5.5.8 8 2.4"/>',
+frag:'<path d="M12 3l6 6.5L12 21 6 9.5z"/><path d="M6 9.5h12M9.5 9.5L12 21l2.5-11.5"/>',
+harvest:'<path d="M7 9l3 3-3 7.5L4 12zM17 9l3 3-3 7.5-3-7.5zM12 2.5l2.5 2.5L12 11 9.5 5z"/>'
 };
 function svgIco(k){
   var d=ICONS[k];
@@ -2517,6 +2555,7 @@ var TITLES = [
   {id:"spieler",    r:"selten", m:"Der Spieler",         w:"Die Spielerin",       d:function(){return "Alle Kategorien mindestens in Silber";}, f:function(st){return st.groupsAtLeast(1)>=activeGroups().length;}},
   {id:"ausdauernd", avail:function(){return !!(S.plan&&S.plan.run);}, r:"selten", m:"Der Ausdauernde",    w:"Die Ausdauernde",     d:function(){return "Insgesamt 100 km gelaufen";}, f:function(st){return st.totalKm>=100;}},
   {id:"zehnkm", avail:function(){return !!(S.plan&&S.plan.run);},     r:"selten", m:"Zehnkilometerläufer",w:"Zehnkilometerläuferin",d:function(){return "Einmal 10 km am Stück gelaufen";}, f:function(st){return st.maxKm>=10;}},
+  {id:"sh_nekro",  r:"selten",   m:"Nekromant",            w:"Nekromantin",            d:function(){return "3 Schatten erweckt";}, f:function(st){return shOf(st).owned>=3;}},
   /* EPISCH */
   {id:"tonnenschwer",r:"episch",m:"Der Tonnenschwere",   w:"Die Tonnenschwere",   d:function(){return "Insgesamt "+kg(1000000)+" bewegt";}, f:function(st){return st.totalVol>=1000000;}},
   {id:"unbeugsam",  r:"episch", m:"Der Unbeugsame",      w:"Die Unbeugsame",      d:function(){return "26 Wochen in Folge trainiert";}, f:function(st){return st.maxWeekStreak>=26;}},
@@ -2528,6 +2567,8 @@ var TITLES = [
   {id:"bestaendig", avail:function(){return !!(S.plan&&S.plan.run);}, r:"episch", m:"Der Beständige",      w:"Die Beständige",      d:function(){return "Insgesamt 500 km gelaufen";}, f:function(st){return st.totalKm>=500;}},
   {id:"halbdist", avail:function(){return !!(S.plan&&S.plan.run);},   r:"episch", m:"Halbdistanzler",      w:"Halbdistanzlerin",    d:function(){return "Einmal 21,1 km am Stück gelaufen";}, f:function(st){return st.maxKm>=21.1;}},
   {id:"schattenjg", r:"episch", m:"Der Schattenjäger",   w:"Die Schattenjägerin", d:function(){return "Alle Kategorien mindestens in Gold";}, f:function(st){return st.groupsAtLeast(2)>=activeGroups().length;}},
+  {id:"sh_krieg",  r:"episch",   m:"Der Kriegsherr",       w:"Die Kriegsherrin",       d:function(){return "Einen Schatten auf Rang General gebracht";}, f:function(st){return shOf(st).maxR>=4;}},
+  {id:"sh_heer",   r:"episch",   m:"Heerführer",           w:"Heerführerin",           d:function(){return "6 Schatten erweckt";}, f:function(st){return shOf(st).owned>=6;}},
   /* MYTHISCH */
   {id:"herrscher",  r:"mythisch",m:"Herrscher der Schwerkraft",w:"Herrscherin der Schwerkraft",d:function(){return "Meister-Liga in einer Muskelgruppe";}, f:function(st){return st.bestLeague()>=5;}},
   {id:"ewig",       r:"mythisch",m:"Der Ewige",          w:"Die Ewige",           d:function(){return "52 Wochen in Folge trainiert";}, f:function(st){return st.maxWeekStreak>=52;}},
@@ -2537,6 +2578,7 @@ var TITLES = [
   {id:"distanzfr", avail:function(){return !!(S.plan&&S.plan.run);},  r:"mythisch",m:"Distanzfresser",     w:"Distanzfresserin",    d:function(){return "Insgesamt 1.000 km gelaufen";}, f:function(st){return st.totalKm>=1000;}},
   {id:"marathon", avail:function(){return !!(S.plan&&S.plan.run);},   r:"mythisch",m:"Der Marathonier",    w:"Die Marathonierin",   d:function(){return "Einmal 42,2 km am Stück gelaufen";}, f:function(st){return st.maxKm>=42.2;}},
   {id:"schattenwd", r:"mythisch",m:"Der Schattenwandler",w:"Die Schattenwandlerin",d:function(){return "Alle Kategorien mindestens in Platin";}, f:function(st){return st.groupsAtLeast(3)>=activeGroups().length;}},
+  {id:"sh_neun",   r:"mythisch", m:"Herr der Neun",        w:"Herrin der Neun",        d:function(){return "Alle neun Schatten erweckt";}, f:function(st){return shOf(st).owned>=9;}},
   /* LEGENDÄR */
   {id:"koloss",     r:"legendaer",m:"Kolossbrecher",     w:"Kolossbrecherin",     d:function(){return "Ein einzelner Satz mit über "+G(300,180)+" kg Gesamtlast";}, f:function(st){return st.maxSetLoad>=G(300,180);}},
   {id:"nachtw",     r:"legendaer",m:"Nachtwandler",      w:"Nachtwandlerin",      d:function(){return "An 20 Tagen nach 21 Uhr trainiert";}, f:function(st){return st.lateDays>=20;}},
@@ -2545,10 +2587,12 @@ var TITLES = [
   {id:"unmoeglich", r:"legendaer",m:"Der Unmögliche",    w:"Die Unmögliche",      d:function(){return "An einem Tag "+kg(G(10000,6000))+" nur mit Bauchübungen bewegt";}, f:function(st){return st.absOnlyDayVol>=G(10000,6000);}},
   {id:"windbrecher", avail:function(){return !!(S.plan&&S.plan.run);},r:"legendaer",m:"Windbrecher",       w:"Windbrecherin",       d:function(){return "5 km unter "+Math.floor(G(1200,1380)/60)+":00 gelaufen";}, f:function(st){return st.fastFive(G(1200,1380));}},
   {id:"schattenf",   r:"legendaer",m:"Schattenfürst",     w:"Schattenfürstin",     d:function(){return "Alle Kategorien mindestens in Diamant";}, f:function(st){return st.groupsAtLeast(4)>=activeGroups().length;}},
+  {id:"sh_erbe",   r:"legendaer",m:"Erbe des Schattenheers",w:"Erbin des Schattenheers",d:function(){return "Bellion zum Großmarschall erhoben";}, f:function(st){return shOf(st).bellion>=6;}},
   {id:"namenlos",   r:"legendaer",m:"Der Namenlose",     w:"Die Namenlose",       d:function(){return "Alle anderen Titel gesammelt";}, f:function(){return false;}},
   /* SONDERSTUFE */
   {id:"vollkommen",r:"sonder", hidden:true, m:"Der Vollkommene",  w:"Die Vollkommene",     d:function(){return "Alle Erfolge der App freigeschaltet";}, f:function(st){return st.allAchDone();}},
   {id:"monarch",    r:"sonder",  m:"Schattenmonarch",    w:"Schattenmonarchin",   d:function(){return "Alle Kategorien in der Meister-Liga";}, f:function(st){return st.groupsAtLeast(5)>=activeGroups().length;}},
+  {id:"sh_legion", r:"sonder",   m:"Gebieter der Legion",  w:"Gebieterin der Legion",  d:function(){return "Alle neun Schatten mindestens auf Rang General";}, f:function(st){return shOf(st).allGen;}},
   /* BERÜCHTIGT (versteckt bis freigeschaltet) */
   {id:"codebreaker",r:"geheim", hidden:true, secret:true, m:"Codebreaker", w:"Codebreakerin",
    d:function(){return "Du hast den Code gebrochen.";},
@@ -2558,7 +2602,8 @@ var TITLES = [
   {id:"fabulier",   r:"beruecht",m:"Der Fabulierer",     w:"Die Fabuliererin",    d:function(){return "Level künstlich aufgebläht – dieselbe Übung 3× an einem Tag oder mehr als 3 volle Programme";}, f:function(st){return st.maxProgramsPerDay>3 || st.maxSameExPerDay>=3;}},
   {id:"zahlendreh", r:"beruecht",m:"Zahlendreher",       w:"Zahlendreherin",      d:function(){return "Ein Satz weit über dem Bestwert – und nie wieder in die Nähe gekommen";}, f:function(st){return st.outlier;}},
   {id:"halbherzig", r:"beruecht",m:"Der Halbherzige",    w:"Die Halbherzige",     d:function(){return "5× ein Workout abgeschlossen, ohne alle Übungen zu loggen";}, f:function(st){return st.unfinishedDays>=5;}},
-  {id:"aufschneid", r:"beruecht",m:"Der Aufschneider",   w:"Die Aufschneiderin",  d:function(){return "An einem Tag bei 3 verschiedenen Übungen Gewichte weit jenseits des Menschenmöglichen eingetragen";}, f:function(st){return st.absurdExCount>=3;}}
+  {id:"aufschneid", r:"beruecht",m:"Der Aufschneider",   w:"Die Aufschneiderin",  d:function(){return "An einem Tag bei 3 verschiedenen Übungen Gewichte weit jenseits des Menschenmöglichen eingetragen";}, f:function(st){return st.absurdExCount>=3;}},
+  {id:"sh_horter", r:"beruecht", m:"Der Horter",           w:"Die Horterin",           d:function(){return "300 Schattenfragmente gesammelt, ohne eines auszugeben";}, f:function(st){return shOf(st).hoard>=300;}}
 ];
 function titleName(t){ return (S.profile&&S.profile.gender==="w")?t.w:t.m; }
 function titleById(id){ for(var i=0;i<TITLES.length;i++) if(TITLES[i].id===id) return TITLES[i]; return null; }
@@ -2587,7 +2632,7 @@ function checkAchievements(notify){
   var ACH_TIER = {
     "TAGESVOLUMEN":1, "KONSTANZ":1, "SPEZIAL":1,
     "LEVEL":2, "ÜBUNGS-MEILENSTEINE":2,
-    "WOCHEN-STREAK":3, "GESAMTVOLUMEN":3, "LIGEN":3
+    "WOCHEN-STREAK":3, "GESAMTVOLUMEN":3, "LIGEN":3, "SCHATTENARMEE":2
   };
   var ACH_COLOR = {1:"#47a99c", 2:"#4f93c9", 3:"#d7a63e"};
   A.forEach(function(a){
@@ -3608,20 +3653,20 @@ function openArcDetails(y){
    gespeichert wird nur, was ausgegeben wurde und welche Schatten erweckt sind.
    Die Zeichen sind eigene, abstrakte Symbole.                              */
 var SHADOWS=[
-  {id:"igris",   n:"Igris",   c:"#d0414b", cost:10},
-  {id:"tank",    n:"Tank",    c:"#86cdee", cost:25},
-  {id:"iron",    n:"Iron",    c:"#a9b4c0", cost:40},
-  {id:"tusk",    n:"Tusk",    c:"#e88a45", cost:60},
-  {id:"kaisel",  n:"Kaisel",  c:"#6f9dff", cost:85},
-  {id:"jima",    n:"Jima",    c:"#3cc4b2", cost:115},
-  {id:"greed",   n:"Greed",   c:"#dcb84f", cost:150},
-  {id:"beru",    n:"Beru",    c:"#a27bff", cost:200},
-  {id:"bellion", n:"Bellion", c:"#d7deee", cost:300}
+  {id:"igris",   n:"Igris",   c:"#d0414b", cost:10, cn:"Rot"},
+  {id:"tank",    n:"Tank",    c:"#86cdee", cost:25, cn:"Eisblau"},
+  {id:"iron",    n:"Iron",    c:"#a9b4c0", cost:40, cn:"Stahlgrau"},
+  {id:"tusk",    n:"Tusk",    c:"#e88a45", cost:60, cn:"Orange"},
+  {id:"kaisel",  n:"Kaisel",  c:"#6f9dff", cost:85, cn:"Blau"},
+  {id:"jima",    n:"Jima",    c:"#3cc4b2", cost:115, cn:"Türkis"},
+  {id:"greed",   n:"Greed",   c:"#dcb84f", cost:150, cn:"Gold"},
+  {id:"beru",    n:"Beru",    c:"#a27bff", cost:200, cn:"Violett"},
+  {id:"bellion", n:"Bellion", c:"#d7deee", cost:300, cn:"Silber"}
 ];
 var SH_RANKS=["Normal","Elite","Ritter","Elite-Ritter","General","Marschall","Großmarschall"];
 var SH_UP=[15,30,60,120,240,480];          /* Kosten von Rang i auf i+1 */
-var SH_FXS=["Zeichen","Akzentfarbe","Aura","Partikel","Startbildschirm","Titelrahmen","Silberrahmen"];
-var SH_FX=["Zeichen im Profil","Akzentfarbe im HUD","Aura um den Level-Ring","Schattenpartikel beim Abschließen",
+var SH_FXS=["Zeichen","Schattenfarbe","Aura","Partikel","Startbildschirm","Titelrahmen","Silberrahmen"];
+var SH_FX=["Zeichen am Level-Ring","Schattenfarbe für die App (wählbar)","Aura um den Level-Ring","Schattenpartikel beim Abschließen",
            "eigener Startbildschirm","animierter Rahmen um deinen Titel","silberner Titelrahmen"];
 var SH_SIG={
   igris:"M12 2.5v14.5M7.5 7.5h9M12 17l-2.6 4.5h5.2zM9.5 4.5l2.5-2 2.5 2",
@@ -3689,7 +3734,7 @@ function shCanAwaken(d){
 function awakenShadow(id){
   var d=shadowDef(id), s=shState();
   if(!d || s.owned[id]!==undefined || nextShadow()!==d || !shCanAwaken(d)) return false;
-  s.spent+=d.cost; s.owned[id]=0;
+  s.spent+=d.cost; s.owned[id]=0; s.hoardFrom=fragLedger().total;
   if(!s.active) s.active=id;
   save(); applyShadowFx();
   return true;
@@ -3699,7 +3744,7 @@ function upgradeShadow(id){
   if(r===undefined || r>=shMaxRank(id)) return false;
   var c=SH_UP[r];
   if(fragBalance()<c) return false;
-  s.spent+=c; s.owned[id]=r+1;
+  s.spent+=c; s.owned[id]=r+1; s.hoardFrom=fragLedger().total;
   save(); applyShadowFx();
   return true;
 }
@@ -3713,10 +3758,109 @@ function setActiveShadow(id){
 function applyShadowFx(){
   var b=document.body; if(!b || !b.classList) return;
   for(var i=1;i<=6;i++) b.classList.remove("sh-r"+i);
-  var a=activeShadow(); if(!a || S.shadowFx===false) return;
-  document.documentElement.style.setProperty("--sh", a.d.c);
-  for(var k=1;k<=a.r;k++) b.classList.add("sh-r"+k);
+  var a=activeShadow(), on=!!a && S.shadowFx!==false;
+  renderShadowBadge(on?a:null);
+  renderShadowChip();
+  if(on){
+    document.documentElement.style.setProperty("--sh", a.d.c);
+    for(var k=1;k<=a.r;k++) b.classList.add("sh-r"+k);
+  }
+  if(typeof renderHudTitle==="function") renderHudTitle();   /* App-Farbe: Titel oder Schatten */
 }
+/* Eine App-Farbe: standardmäßig die des Titels; ab Rang Elite kann der aktive
+   Schatten sie stellen. Große Events (Winter-Optik) behalten ihre Farben. */
+function shColorOn(){
+  var a=activeShadow(), w=false;
+  try{ w=winterOn(); }catch(e){}
+  return !!(a && a.r>=1 && S.shColor===true && S.shadowFx!==false && !w);
+}
+function applyShadowColor(){
+  var b=document.body; if(!b || !b.classList) return;
+  var on=false; try{ on=shColorOn(); }catch(e){}
+  if(!on){ b.classList.remove("sh-color"); return; }
+  var c=activeShadow().d.c;
+  b.classList.add("sh-color");
+  document.documentElement.style.setProperty("--accent", c);
+  var el=document.getElementById("hudTitle");
+  if(el && S.title && !el.className) el.style.color=c;
+}
+function renderShadowBadge(a){
+  var bd=document.getElementById("shBadge"); if(!bd) return;
+  if(!a){ bd.style.display="none"; bd.innerHTML=""; return; }
+  bd.style.display="";
+  bd.innerHTML=shSig(a.d.id);
+  bd.style.setProperty("--bc", a.d.c);
+  bd.style.setProperty("--bcg", hexA(a.d.c,.45));
+  bd.setAttribute("title", a.d.n+" · "+SH_RANKS[a.r]);
+}
+/* Kann gerade etwas erweckt oder der aktive Schatten aufgewertet werden? */
+function shReady(){
+  var nx=nextShadow();
+  if(nx && shCanAwaken(nx)) return true;
+  var a=activeShadow();
+  return !!(a && a.r<shMaxRank(a.d.id) && fragBalance()>=SH_UP[a.r]);
+}
+function renderShadowChip(){
+  var c=document.getElementById("shChip"); if(!c) return;
+  c.innerHTML="\u25c6 "+fmt(Math.max(0,fragBalance()));
+  c.className="sh-chip"+(shReady()?" ready":"");
+}
+/* Kennzahlen für Titel und Erfolge der Schattenarmee */
+function shStats(){
+  var o={owned:0, maxR:-1, bellion:-1, allGen:false, earned:0, bal:0, hoard:0, bestDay:0};
+  if(typeof SHADOWS==="undefined" || !SHADOWS || !S) return o;
+  var s=shState(), all=true;
+  SHADOWS.forEach(function(d){
+    var r=s.owned[d.id];
+    if(r===undefined){ all=false; return; }
+    o.owned++; if(r>o.maxR) o.maxR=r; if(r<4) all=false;
+  });
+  o.bellion = s.owned.bellion===undefined ? -1 : s.owned.bellion;
+  o.allGen = all;
+  var L=fragLedger();
+  o.earned = L.train+L.pr+L.weeks+L.events;     /* Fragmente aus Minispielen zählen hier nicht */
+  o.bal = L.total - s.spent;
+  if(typeof s.hoardFrom!=="number") s.hoardFrom=L.total;   /* bestehende Armeen: ab jetzt zählen */
+  o.hoard = Math.max(0, L.total - s.hoardFrom);
+  var fin={}, str={}, days={};
+  (S.finishedDates||[]).forEach(function(d){ fin[d]=1; days[d]=1; });
+  S.entries.forEach(function(e){ if(e.ex!=="run") str[e.date]=1; });
+  Object.keys(L.prDay).forEach(function(d){ days[d]=1; });
+  Object.keys(days).forEach(function(d){
+    var n=(fin[d]&&str[d]?2:0)+3*(L.prDay[d]||0);
+    if(n>o.bestDay) o.bestDay=n;
+  });
+  return o;
+}
+function shOf(st){
+  if(!st) return shStats();
+  if(!st._sh) st._sh=shStats();
+  return st._sh;
+}
+function openShColorAsk(id){
+  var d=shadowDef(id), box=document.getElementById("summaryBox"), w=false;
+  try{ w=winterOn(); }catch(e){}
+  box.className="summary sh-ask";
+  box.innerHTML='<h3>'+d.n.toUpperCase()+' \u00b7 ELITE</h3>'+shSigBox(d,true)+
+    '<p>Soll die App die Farbe von '+d.n+' annehmen? Level-Ring, XP-Leiste, Knöpfe und dein Titel leuchten dann in '+d.cn+'. '+
+    'Sonst bleibt alles in der Farbe deines Titels.'+(w?' Solange die Winter-Optik an ist, behält sie ihre Farben.':'')+
+    '<small>Jederzeit änderbar unter Einstellungen \u2192 Darstellung.</small></p>'+
+    '<button id="shcYes">'+d.cn+' übernehmen</button>'+
+    '<button id="shcNo" style="background:rgba(4,8,18,.7);color:var(--text);border-color:var(--border);margin-top:8px;">Titelfarbe behalten</button>';
+  function done(yes){
+    S.shColorAsked=true; S.shColor=!!yes; save(); applyShadowFx();
+    toast(yes ? "App-Farbe: "+d.n : "App-Farbe bleibt beim Titel");
+    openShadowArmy();
+  }
+  document.getElementById("shcYes").addEventListener("click", function(){ done(true); });
+  document.getElementById("shcNo").addEventListener("click", function(){ done(false); });
+  openOverlay();
+}
+document.getElementById("shChip").addEventListener("click", function(){ openShadowArmy(); });
+document.getElementById("shBadge").addEventListener("click", function(ev){
+  if(ev && ev.stopPropagation) ev.stopPropagation();   /* nicht als Tipp auf den Ring zählen */
+  openShadowArmy();
+});
 function shSigBox(d, own){
   return '<div class="sh-sig'+(own?'':' off')+'" style="--sc:'+(own?d.c:'var(--border)')+';'+
     (own?'background:radial-gradient(circle at 50% 60%,'+hexA(d.c,.28)+',transparent 70%);':'')+'">'+shSig(d.id)+'</div>';
@@ -3767,9 +3911,9 @@ function openShadowArmy(){
     '<div class="sh-list">'+rows+'</div>'+
     '<div class="sh-help">Fragmente gibt es für jedes abgeschlossene Training (+2, eins pro Tag), jeden neuen Bestwert (+3), '+
       'jede gesicherte Woche in einem großen Event (+5) und jedes geschaffte große Event (+50). Jeder Rang wertet die Optik etwas auf – '+
-      'auf XP, Ligen und Titel haben Schatten keinen Einfluss.</div>'+
+      'auf XP und Ligen haben Schatten keinen Einfluss. Für den Fortschritt deiner Armee gibt es eigene Titel und Erfolge.</div>'+
     '<button id="closeOverlay" style="background:rgba(4,8,18,.7);color:var(--text);border-color:var(--border);margin-top:10px;">Schließen</button>';
-  function cl(){ closeOverlay(); box.className="summary"; renderAll(); }
+  function cl(){ closeOverlay(); box.className="summary"; renderAll(); checkAchievements(true); }
   document.getElementById("popupX").addEventListener("click", cl);
   document.getElementById("closeOverlay").addEventListener("click", cl);
   box.querySelectorAll("[data-act]").forEach(function(b){
@@ -3778,7 +3922,11 @@ function openShadowArmy(){
   box.querySelectorAll("[data-up]").forEach(function(b){
     b.addEventListener("click", function(){
       var id=b.getAttribute("data-up");
-      if(upgradeShadow(id)){ var d=shadowDef(id), r=shState().owned[id]; toast(d.n+" ist jetzt "+SH_RANKS[r]+" · "+SH_FX[r]); }
+      if(upgradeShadow(id)){
+        var d=shadowDef(id), r=shState().owned[id];
+        if(r===1 && shState().active===id && !S.shColorAsked){ openShColorAsk(id); return; }
+        toast(d.n+" ist jetzt "+SH_RANKS[r]+" · "+SH_FX[r]);
+      }
       openShadowArmy();
     });
   });
@@ -3848,7 +3996,9 @@ function shadowParticles(){
       var ash=activeShadow();
       if(ash && ash.r>=4 && S.shadowFx!==false){
         sp.classList.add("shadow");
-        sp.style.setProperty("--sh", ash.d.c); sp.style.setProperty("--shg", hexA(ash.d.c,.16));
+        var spc=ash.d.c;
+        if(!shColorOn()){ var stt=S.title?titleById(S.title):null; spc=stt?RARITY[stt.r].color:"#4fd6ff"; }
+        sp.style.setProperty("--sh", spc); sp.style.setProperty("--shg", hexA(spc,.16));
         var sl=document.getElementById("spArc");
         if(sl) sl.textContent=ash.d.n.toUpperCase()+" \u00b7 "+SH_RANKS[ash.r].toUpperCase();
       }
@@ -4445,6 +4595,12 @@ function openCodebreaker(){
 
 /* ---------- Update-Neuigkeiten ---------- */
 var NEWS=[
+ {v:"3.1.1", t:"Schattenarmee im Charakterbogen", items:[
+   "Die Schattenarmee ist umgezogen: Oben rechts im Charakterbogen siehst du deine Fragmente, ein Tipp öffnet die Armee. Ein Punkt zeigt, wenn du etwas erwecken oder aufwerten kannst",
+   "Das Zeichen deines aktiven Schattens sitzt jetzt am Level-Ring",
+   "Eine Farbe statt zwei: Die App leuchtet in der Farbe deines Titels, Aura, Partikel und Rahmen eingeschlossen. Ab Rang Elite kannst du stattdessen die Farbe deines Schattens wählen (Einstellungen → Darstellung)",
+   "Neu: eigene Titel und ein eigener Erfolgs-Abschnitt für die Schattenarmee"
+ ]},
  {v:"3.1.0", t:"Schattenarmee, Bestwerte & sauberes Löschen", items:[
    "Neu: die Schattenarmee im Profil – mit jedem Training sammelst du Schattenfragmente und erweckst Schatten, die die Optik der App Stück für Stück aufwerten. Auf XP, Ligen und Titel hat das keinen Einfluss",
    "Bestwerte: In jeder Übung siehst du deinen Bestwert (geschätztes 1RM) und womit du ihn schlägst – ein Satz, der ihn knackt, leuchtet schon beim Eintippen",
@@ -5165,7 +5321,8 @@ function showNextCelebration(){
   });
 }
 
-function renderHudTitle(){
+function renderHudTitle(){ renderHudTitleBase(); applyShadowColor(); }
+function renderHudTitleBase(){
   var nm=document.getElementById("hudName");
   if(nm){
     var n=(S.profile&&S.profile.name)?S.profile.name:"";
@@ -6244,6 +6401,14 @@ function renderSettings(){
     sb.style.display=any?"":"none";
     sb.textContent="Schatten-Optik: "+(S.shadowFx!==false?"an":"aus");
   }
+  var cb=document.getElementById("shColorBtn"), cnote=document.getElementById("shColorNote");
+  if(cb){
+    var aa=activeShadow(), vis=!!(aa && aa.r>=1 && S.shadowFx!==false), ww=false;
+    try{ ww=winterOn(); }catch(e){}
+    cb.style.display=vis?"":"none";
+    if(vis) cb.textContent="App-Farbe: "+(S.shColor===true?"Schatten ("+aa.d.n+")":"Titel");
+    if(cnote) cnote.style.display=(vis && S.shColor===true && ww)?"":"none";
+  }
   var hb=document.getElementById("hapticsBtn");
   if(hb) hb.textContent="Vibration: "+(S.haptics!==false?"an":"aus");
   var rc=document.getElementById("setRest");
@@ -6266,6 +6431,10 @@ document.getElementById("settingsBack").addEventListener("click", function(){ sh
 document.getElementById("shadowFxBtn").addEventListener("click", function(){
   S.shadowFx = S.shadowFx===false; save(); applyShadowFx(); renderSettings();
   toast("Schatten-Optik "+(S.shadowFx?"an":"aus"));
+});
+document.getElementById("shColorBtn").addEventListener("click", function(){
+  S.shColor = S.shColor!==true; S.shColorAsked=true; save(); applyShadowFx(); renderSettings();
+  toast("App-Farbe: "+(S.shColor?"Schatten":"Titel"));
 });
 document.getElementById("hapticsBtn").addEventListener("click", function(){
   S.haptics = S.haptics===false; save(); renderSettings();
