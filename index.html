@@ -1230,7 +1230,7 @@
         </div>
         <button class="save-btn" id="saveProfile">Profil speichern</button>
         <p class="note"><b style="color:var(--accent)">Wo deine Daten liegen:</b> Alles wird ausschließlich lokal auf diesem Gerät gespeichert – Profil, jeder geloggte Satz, XP, Erfolge und Titel. Nichts wird automatisch verschickt. Erfahrung und Trainingstage fließen <i>nicht</i> in Ligen oder Erfolge ein; sie dienen nur als Kontext, falls du unten einen Datenexport erzeugst und ihn freiwillig einsendest – für die Bestenlisten und um die Referenzwerte zu verbessern.</p>
-        <p class="note">Körpergewicht, Geschlecht und Alter fließen in die Liga-Bewertung ein. Die Größe wird gespeichert, hat aber auf die Standards kaum Einfluss – Kraftstandards richten sich primär nach dem Körpergewicht. Bei Dips und Pull-ups wird dein Körpergewicht automatisch mitgerechnet – wähle dort „+ Zusatzgewicht" oder „− Unterstützt" (Gegengewicht der Maschine). Für Pull-ups und Dips gelten eigene Frauen-Standards, da diese Übungen für Frauen relativ deutlich schwerer sind (Ø 6 vs. 13 Pull-ups).</p>
+        <p class="note">Körpergewicht, Geschlecht und Alter fließen in die Liga-Bewertung ein. Die Größe wird gespeichert, hat aber auf die Standards kaum Einfluss – Kraftstandards richten sich primär nach dem Körpergewicht. Bei Dips und Klimmzügen wird dein Körpergewicht automatisch mitgerechnet – wähle dort „+ Zusatzgewicht" oder „− Unterstützt" (Gegengewicht der Maschine). Für Klimmzüge und Dips gelten eigene Frauen-Standards, da diese Übungen für Frauen relativ deutlich schwerer sind (Ø 6 vs. 13 Pull-ups).</p>
       </div>
       <div class="card" style="margin-top:12px;">
         <div class="chart-title">TRAININGSPLAN</div>
@@ -1296,7 +1296,7 @@
 "use strict";
 
 var KEY = "gymlog_v2_state";
-var APP_VERSION = "3.1.2";
+var APP_VERSION = "3.1.3";
 
 /* ---------- Übungskatalog ----------
    bench = geschätztes 1RM eines durchschnittlich trainierten Mannes als Vielfaches
@@ -1322,8 +1322,8 @@ var CATALOG=[
 /* RÜCKEN */
 {id:"deadlift",   g:"Rücken",n:"Kreuzheben",                          b:1.85, w:1.5},
 {id:"rdl",        g:"Rücken",n:"Rumänisches Kreuzheben",              b:1.45, w:1.2},
-{id:"pu_breit",   g:"Rücken",n:"Pull-ups breit",                      b:1.45, w:1.5, bw:1, gf:0.83},
-{id:"pu_eng",     g:"Rücken",n:"Pull-ups eng",                        b:1.45, w:1.3, bw:1, gf:0.83},
+{id:"pu_breit",   g:"Rücken",n:"Klimmzüge breit",                     b:1.45, w:1.5, bw:1, gf:0.83},
+{id:"pu_eng",     g:"Rücken",n:"Klimmzüge eng",                       b:1.45, w:1.3, bw:1, gf:0.83},
 {id:"chinup",     g:"Rücken",n:"Klimmzüge Untergriff",                b:1.50, w:1.3, bw:1, gf:0.83},
 {id:"latpull",    g:"Rücken",n:"Latzug breit",                        b:1.05, w:1.3},
 {id:"latpull_eng",g:"Rücken",n:"Latzug eng",                          b:1.05, w:1.2},
@@ -2410,6 +2410,7 @@ function buildAchievements(st){
     var pick={};
     EX.forEach(function(ex){
       if(ex.group==="Ausdauer") return;
+      if(ex.bw>0) return;   /* Klimmzüge, Dips & Co.: eigene Erfolge mit Zusatzgewicht */
       var cur=pick[ex.group];
       if(!cur || (ex.w||1)>(cur.w||1)) pick[ex.group]=ex;
     });
@@ -2620,7 +2621,9 @@ var TITLES = [
   {id:"schattenwd", r:"mythisch",m:"Der Schattenwandler",w:"Die Schattenwandlerin",d:function(){return "Alle Kategorien mindestens in Platin";}, f:function(st){return st.groupsAtLeast(3)>=activeGroups().length;}},
   {id:"sh_neun",   r:"mythisch", m:"Herr der Neun",        w:"Herrin der Neun",        d:function(){return "Alle neun Schatten erweckt";}, f:function(st){return shOf(st).owned>=9;}},
   /* LEGENDÄR */
-  {id:"koloss",     r:"legendaer", avail:function(){return planHas(["deadlift","squat","legpress","legpress_h"]);}, m:"Kolossbrecher", w:"Kolossbrecherin", d:function(){return "Ein Satz mit dem "+G("2,5","2")+"-fachen (Kreuzheben), "+G("2","1,5")+"-fachen (Kniebeuge), "+G("4","3")+"-fachen (Beinpresse 45°) oder "+G("3","2,4")+"-fachen (Beinpresse horizontal) deines Körpergewichts";}, f:function(st){return kolossOK(st);}},
+  {id:"koloss",     r:"legendaer", avail:function(){return planHas(["deadlift","squat","legpress","legpress_h"]);}, m:"Kolossbrecher", w:"Kolossbrecherin", d:function(){ var bw=(S.profile&&S.profile.weight)||0;
+      function x(f,lbl){ return lbl+" "+String(f).replace(".",",")+"×"+(bw?" ("+kgS(Math.round(bw*f*2)/2)+")":""); }
+      return "Ein Satz mit einem Vielfachen deines Körpergewichts: "+x(G(2.5,2),"Kreuzheben")+", "+x(G(2,1.5),"Kniebeuge")+", "+x(G(4,3),"Beinpresse 45°")+" oder "+x(G(3,2.4),"Beinpresse horizontal"); }, f:function(st){return kolossOK(st);}},
   {id:"zweisonnen", r:"legendaer",m:"Wandler zweier Sonnen",w:"Wandlerin zweier Sonnen",d:function(){return "Zwei Jahre in Folge an jeweils mindestens 150 Tagen trainiert";}, f:function(st){return st.twoYears150;}},
   {id:"unmoeglich", r:"legendaer",m:"Der Unmögliche",    w:"Die Unmögliche",      d:function(){return "12 Wochen in Folge jede Woche alle Trainingstage deines Plans vollständig";}, f:function(st){return st.perfectWeekRun>=12;}},
   {id:"windbrecher", avail:function(){return !!(S.plan&&S.plan.run);},r:"legendaer",m:"Windbrecher",       w:"Windbrecherin",       d:function(){return "5 km unter "+paceStr(Math.round(G(1200,1380)*runAgeF())).replace(" /km","")+" gelaufen"+(runAgeF()>1?" (altersbereinigt)":"");}, f:function(st){return st.fastFive(Math.round(G(1200,1380)*runAgeF()));}},
@@ -4634,6 +4637,11 @@ function openCodebreaker(){
 
 /* ---------- Update-Neuigkeiten ---------- */
 var NEWS=[
+ {v:"3.1.3", t:"Aufgeräumte Erfolge", items:[
+   "Übungs-Meilensteine gibt es jetzt nur noch für Übungen mit Gewicht. Klimmzüge und Dips haben ihre eigenen Erfolge, dadurch gibt es nichts mehr doppelt",
+   "Bei Rücken und Bauch zählt jetzt deine wichtigste Übung mit Gewicht, zum Beispiel Rudern oder die Bauch-Maschine",
+   "Klimmzüge heißen jetzt überall Klimmzüge: breit, eng und Untergriff"
+ ]},
  {v:"3.1.2", t:"Faire Titel & Erfolge", items:[
    "Titel überarbeitet: Einige Titel haben neue Bedingungen, damit alle fair erreichbar sind – schwer, aber nicht unmöglich. Titel, die du schon hast, behältst du",
    "Erfolge: Das Zusatzgewicht bei Klimmzügen und Dips richtet sich jetzt nach deinem Körpergewicht",
@@ -6612,7 +6620,7 @@ document.getElementById("leagueInfoBtn").addEventListener("click", function(){
     '<p>Aus jedem Satz wird ein 1-Wiederholungs-Maximum (1RM) geschätzt: Gewicht × (1 + (Wdh.−1) ÷ 30). Bei Übungen mit Gewichten wird ab 12 Wdh. gedeckelt, weil die Formel dann überschätzt. Bei Körpergewichtsübungen wie Klimmzügen, Dips oder Beinheben erst ab 20 Wdh. – dort sind hohe Wiederholungszahlen normal und sollen zählen.</p>'+
     '<h4>2 · VERGLEICH MIT DEM DURCHSCHNITT</h4>'+
     '<p>Dein bestes 1RM (letzte 90 Tage) wird durch einen Referenzwert geteilt: das, was ein durchschnittlich trainierter Mensch mit deinem Körpergewicht, Geschlecht und Alter bei dieser Übung schafft. Das Ergebnis ist der Score – 1,00 heißt exakt Durchschnitt.</p>'+
-    '<p class="dim">Referenzen angelehnt an Daten von strengthlevel.com (Millionen geloggter Sätze). Frauen-Referenzen liegen je nach Muskelgruppe bei 58–72% der Männer-Werte; Pull-ups (83%) und Dips (80%) haben eigene Faktoren. Ab 35 sinkt die Referenz um 1% pro Jahr.</p>'+
+    '<p class="dim">Referenzen angelehnt an Daten von strengthlevel.com (Millionen geloggter Sätze). Frauen-Referenzen liegen je nach Muskelgruppe bei 58–72% der Männer-Werte; Klimmzüge (83%) und Dips (80%) haben eigene Faktoren. Ab 35 sinkt die Referenz um 1% pro Jahr.</p>'+
     '<h4>3 · ERST NACH DEM ABSCHLUSS</h4>'+'<p>Ein laufendes Workout fließt erst ein, wenn du es abschließt. Sonst würde die Liga nach jedem einzelnen Satz springen – nach der ersten Brustübung stünde dort Platin, nach der letzten Bauchübung wieder Silber.</p>'+'<h4>4 · ALLE ÜBUNGEN ZÄHLEN</h4>'+
     '<p>Pro Muskelgruppe werden alle geloggten Übungen zu einem gewichteten Durchschnitt verrechnet. Grundübungen zählen dabei mehr als Isolationsübungen (z.&nbsp;B. Bankdrücken stärker als Butterfly). Übungen, die du nie loggst, fließen nicht ein.</p>'+
     '<p class="dim">Wer auf jeder Übung genau den Durchschnittswert schafft, erhält Score 1,00 – also Gold-Mitte. Da der Durchschnitt über mehrere Übungen gebildet wird, fallen einzelne Paradeübungen weniger ins Gewicht als früher; dafür ist der Wert aussagekräftiger für die ganze Muskelgruppe.</p>'+
