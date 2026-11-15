@@ -1296,7 +1296,7 @@
 "use strict";
 
 var KEY = "gymlog_v2_state";
-var APP_VERSION = "3.1.1";
+var APP_VERSION = "3.1.2";
 
 /* ---------- Übungskatalog ----------
    bench = geschätztes 1RM eines durchschnittlich trainierten Mannes als Vielfaches
@@ -1509,6 +1509,14 @@ function load(){
     st.lastInputs=li;
     /* 3.1.0: Pausen-Timer-Standard 3 Minuten – einmalig, nur wenn noch der alte Standard eingestellt war */
     if(!st.rest180){ if(st.restSeconds===90) st.restSeconds=180; st.rest180=true; }
+    /* 3.1.2: Klimmzug- und Dips-Erfolge heißen jetzt nach Prozent – Erreichtes bleibt erreicht */
+    if(!st.m312){
+      var AS=st.achSeen=st.achSeen||{}, gw=!!(st.profile&&st.profile.gender==="w");
+      (gw ? [["Klimmzüge +7,5 kg","Klimmzüge +10 %"],["Klimmzüge +20 kg","Klimmzüge +30 %"],["Dips +12,5 kg","Dips +20 %"],["Dips +30 kg","Dips +45 %"]]
+          : [["Klimmzüge +15 kg","Klimmzüge +15 %"],["Klimmzüge +35 kg","Klimmzüge +40 %"],["Dips +25 kg","Dips +25 %"],["Dips +50 kg","Dips +55 %"]])
+      .forEach(function(p){ var o="ÜBUNGS-MEILENSTEINE|"+p[0], n="ÜBUNGS-MEILENSTEINE|"+p[1]; if(AS[o] && !AS[n]) AS[n]=AS[o]; });
+      st.m312=true;
+    }
     if(!st.shadow || typeof st.shadow!=="object") st.shadow={spent:0, owned:{}, active:null};
     if(!st.plan) st.plan=defaultPlan();
     return st;
@@ -2162,6 +2170,24 @@ function computeStats(){
     });
     if(all3) st.tripleDay=true;
   });
+  /* Zwei Jahre in Folge mit je mindestens 150 Trainingstagen */
+  var yc={};
+  Object.keys(st.dates).forEach(function(d){ var y=+d.slice(0,4); yc[y]=(yc[y]||0)+1; });
+  st.twoYears150=Object.keys(yc).some(function(y){ return yc[y]>=150 && (yc[+y+1]||0)>=150; });
+  /* Perfekte Wochen: jeder Trainingstag des Plans vollständig – längste Serie */
+  var perfWk={}, pdl2=planDayIds();
+  Object.keys(st.dayExs).forEach(function(d){
+    pdl2.forEach(function(day){
+      var need=dayExercises(day,d); if(!need.length) return;
+      for(var i=0;i<need.length;i++) if(!st.dayExs[d][need[i]]) return;
+      var wk=weekStart(d); perfWk[wk]=perfWk[wk]||{}; perfWk[wk][day]=1;
+    });
+  });
+  var pwk=Object.keys(perfWk).filter(function(wk){
+    return pdl2.length>0 && pdl2.every(function(id){ return perfWk[wk][id]; });
+  }).sort(), prun=0, pmax=0, pprev=null;
+  pwk.forEach(function(wk){ prun=(pprev && addDays(pprev,7)===wk) ? prun+1 : 1; if(prun>pmax) pmax=prun; pprev=wk; });
+  st.perfectWeekRun=pmax;
   /* Serie an Wochen mit mindestens 3 Trainingstagen */
   var wkDayCount={};
   Object.keys(st.dates).forEach(function(d){
@@ -2321,6 +2347,17 @@ function updateLeaguePeak(){
 
 /* ---------- Erfolge ---------- */
 function G(m,w){ return (S.profile&&S.profile.gender==="w")?w:m; }
+/* Laufen: ab 35 Jahren 1 % mehr Zeit pro Jahr – wie bei den Ligen */
+function runAgeF(){ var a=(S.profile&&S.profile.age)||30; return 1+Math.max(0,a-35)*0.01; }
+/* Zusatzgewicht als Anteil des Körpergewichts, auf 0,5 kg gerundet */
+function bwPct(pc){ var bw=(S.profile&&S.profile.weight)||G(80,65); return Math.round(bw*pc/100*2)/2; }
+function kgS(v){ return String(v).replace(".",",")+" kg"; }
+/* Kolossbrecher: Grundübungen relativ zum Körpergewicht */
+function kolossOK(st){
+  var bw=(S.profile&&S.profile.weight)||0; if(!bw) return false;
+  return st.maxExW(["deadlift"])>=bw*G(2.5,2) || st.maxExW(["squat"])>=bw*G(2,1.5) ||
+         st.maxExW(["legpress"])>=bw*G(4,3)  || st.maxExW(["legpress_h"])>=bw*G(3,2.4);
+}
 function kg(n){ return fmt(n)+" kg"; }
 
 function buildAchievements(st){
@@ -2352,7 +2389,7 @@ function buildAchievements(st){
     once("KONSTANZ","calendar",n+" Trainingstage","An "+n+" verschiedenen Tagen geloggt",st.workoutDays,n);
   });
   /* Level */
-  [5,10,25].forEach(function(l){
+  [5,10,25,50].forEach(function(l){
     once("LEVEL","star","Level "+l,"Erreiche Level "+l,st.level,l);
   });
   /* Ligen */
@@ -2401,20 +2438,20 @@ function buildAchievements(st){
   if(planHas(["pu_breit","pu_eng","chinup"])){
     once("ÜBUNGS-MEILENSTEINE","pullup","Erster Klimmzug","Ein Satz Klimmzüge ohne Unterstützung",
          st.anyUnassisted(["pu_breit","pu_eng","chinup"])?1:0,1);
-    [[15,7.5],[35,20]].forEach(function(t){
-      var tg=G(t[0],t[1]);
-      once("ÜBUNGS-MEILENSTEINE","pullup","Klimmzüge +"+String(tg).replace(".",",")+" kg",
-           "Klimmzüge mit "+String(tg).replace(".",",")+" kg Zusatzgewicht",
+    [[15,10],[40,30]].forEach(function(t){
+      var pc=G(t[0],t[1]), tg=bwPct(pc);
+      once("ÜBUNGS-MEILENSTEINE","pullup","Klimmzüge +"+pc+" %",
+           "Klimmzüge mit "+pc+" % deines Körpergewichts als Zusatzgewicht ("+kgS(tg)+")",
            st.maxExW(["pu_breit","pu_eng","chinup"]),tg);
     });
   }
   if(planHas(["dips"])){
     once("ÜBUNGS-MEILENSTEINE","dips","Erste Dips","Ein Satz Dips ohne Unterstützung",
          st.anyUnassisted(["dips"])?1:0,1);
-    [[25,12.5],[50,30]].forEach(function(t){
-      var tg=G(t[0],t[1]);
-      once("ÜBUNGS-MEILENSTEINE","dips","Dips +"+String(tg).replace(".",",")+" kg",
-           "Dips mit "+String(tg).replace(".",",")+" kg Zusatzgewicht",st.maxExW(["dips"]),tg);
+    [[25,20],[55,45]].forEach(function(t){
+      var pc=G(t[0],t[1]), tg=bwPct(pc);
+      once("ÜBUNGS-MEILENSTEINE","dips","Dips +"+pc+" %",
+           "Dips mit "+pc+" % deines Körpergewichts als Zusatzgewicht ("+kgS(tg)+")",st.maxExW(["dips"]),tg);
     });
   }
   /* Spezial */
@@ -2430,12 +2467,13 @@ function buildAchievements(st){
     counter("LAUF-DISTANZ",t[1],t[0],"Ein Lauf über mindestens "+String(t[2]).replace(".",",")+" km (zählt Läufe)",
       (function(){ var c=0; S.entries.forEach(function(e){ if(e.ex==="run"&&e.km>=t[2]) c++; }); return c; })());
   });
-  [100,500,1000,5000].forEach(function(d){
+  [100,500,1000,2500].forEach(function(d){
     once("GESAMTSTRECKE","road",fmt(d)+" km gelaufen","Insgesamt "+fmt(d)+" km zurückgelegt",st.totalKm,d);
   });
   [[420,480],[360,420],[300,345],[270,315]].forEach(function(t){
-    var tg=G(t[0],t[1]);
-    once("TEMPO","bolt","Unter "+paceStr(tg).replace(" /km",""),"Beste Pace über 3 km schneller als "+paceStr(tg),
+    var tg0=G(t[0],t[1]), tg=Math.round(tg0*runAgeF());   /* Name bleibt gleich, Ziel altersbereinigt */
+    once("TEMPO","bolt","Unter "+paceStr(tg0).replace(" /km",""),
+      "Beste Pace über 3 km schneller als "+paceStr(tg)+(tg!==tg0?" (altersbereinigt)":""),
       st.bestPace!==null?(tg*2-st.bestPace):0, tg);
   });
   [10,50].forEach(function(n){
@@ -2549,8 +2587,8 @@ var TITLES = [
   {id:"beharrlich", r:"selten", m:"Der Beharrliche",     w:"Die Beharrliche",     d:function(){return "12 Wochen in Folge trainiert";}, f:function(st){return st.maxWeekStreak>=12;}},
   {id:"eisen",      r:"selten", m:"Eisenträger",         w:"Eisenträgerin",       d:function(){return "Insgesamt "+kg(250000)+" bewegt";}, f:function(st){return st.totalVol>=250000;}},
   {id:"vollstaend", r:"selten", m:"Der Vollständige",    w:"Die Vollständige",    d:function(){return "10× ein Trainingsprogramm vollständig geloggt";}, f:function(st){return st.completeDays>=10;}},
-  {id:"vertikal",   r:"selten", avail:function(){return planHas(["pu_breit","pu_eng","chinup"]);}, m:"Vertikal Erhoben",    w:"Vertikal Erhoben",    d:function(){return "Klimmzüge mit "+G(20,10)+" kg Zusatzgewicht";}, f:function(st){return st.maxExW(["pu_breit","pu_eng","chinup"])>=G(20,10);}},
-  {id:"schwerkraft",r:"selten", avail:function(){return planHas(["dips"]);}, m:"Schwerkraftverächter",w:"Schwerkraftverächterin",d:function(){return "Dips mit "+G(40,20)+" kg Zusatzgewicht";}, f:function(st){return st.maxExW(["dips"])>=G(40,20);}},
+  {id:"vertikal",   r:"selten", avail:function(){return planHas(["pu_breit","pu_eng","chinup"]);}, m:"Vertikal Erhoben",    w:"Vertikal Erhoben",    d:function(){return "Klimmzüge mit "+G(22,15)+" % deines Körpergewichts als Zusatzgewicht ("+kgS(bwPct(G(22,15)))+")";}, f:function(st){return st.maxExW(["pu_breit","pu_eng","chinup"])>=bwPct(G(22,15));}},
+  {id:"schwerkraft",r:"selten", avail:function(){return planHas(["dips"]);}, m:"Schwerkraftverächter",w:"Schwerkraftverächterin",d:function(){return "Dips mit "+G(45,30)+" % deines Körpergewichts als Zusatzgewicht ("+kgS(bwPct(G(45,30)))+")";}, f:function(st){return st.maxExW(["dips"])>=bwPct(G(45,30));}},
   {id:"schwaechste",r:"selten", m:"Die schwächste Waffe der Menschheit", w:"Die schwächste Waffe der Menschheit", d:function(){return "Alle Kategorien mindestens in Bronze";}, f:function(st){return st.groupsAtLeast(0)>=activeGroups().length;}},
   {id:"spieler",    r:"selten", m:"Der Spieler",         w:"Die Spielerin",       d:function(){return "Alle Kategorien mindestens in Silber";}, f:function(st){return st.groupsAtLeast(1)>=activeGroups().length;}},
   {id:"ausdauernd", avail:function(){return !!(S.plan&&S.plan.run);}, r:"selten", m:"Der Ausdauernde",    w:"Die Ausdauernde",     d:function(){return "Insgesamt 100 km gelaufen";}, f:function(st){return st.totalKm>=100;}},
@@ -2563,7 +2601,9 @@ var TITLES = [
   {id:"hundertfach",r:"episch", m:"Der Hundertfache",    w:"Die Hundertfache",    d:function(){return "An 100 Tagen trainiert";}, f:function(st){return st.workoutDays>=100;}},
   {id:"zweilasten", r:"episch", m:"Träger zweier Lasten",w:"Trägerin zweier Lasten",d:function(){return "An einem Tag "+kg(G(25000,15000))+" bewegt";}, f:function(st){return st.maxDayVol>=G(25000,15000);}},
   {id:"rastlos",    r:"episch", m:"Der Rastlose",        w:"Die Rastlose",        d:function(){return "8 Wochen in Folge mindestens 3× pro Woche trainiert";}, f:function(st){return st.streak3x>=8;}},
-  {id:"unsterbl",   r:"episch", m:"Der Unsterbliche",    w:"Die Unsterbliche",    d:function(){return "14 Tage am Stück ohne Pause trainiert";}, f:function(st){return st.maxDayStreak>=14;}},
+  {id:"unsterbl",   r:"episch", m:"Der Unsterbliche",    w:"Die Unsterbliche",    d:function(){return "100 Bestwerte aufgestellt";}, f:function(st){return shOf(st).prs>=100;}},
+  {id:"nachtw",     r:"episch",   m:"Nachtwandler",      w:"Nachtwandlerin",      d:function(){return "An 20 Tagen nach 21 Uhr trainiert";}, f:function(st){return st.lateDays>=20;}},
+  {id:"fruehauf",   r:"episch",   m:"Der Frühaufsteher", w:"Die Frühaufsteherin", d:function(){return "An 20 Tagen vor 8 Uhr trainiert";}, f:function(st){return st.earlyDays>=20;}},
   {id:"bestaendig", avail:function(){return !!(S.plan&&S.plan.run);}, r:"episch", m:"Der Beständige",      w:"Die Beständige",      d:function(){return "Insgesamt 500 km gelaufen";}, f:function(st){return st.totalKm>=500;}},
   {id:"halbdist", avail:function(){return !!(S.plan&&S.plan.run);},   r:"episch", m:"Halbdistanzler",      w:"Halbdistanzlerin",    d:function(){return "Einmal 21,1 km am Stück gelaufen";}, f:function(st){return st.maxKm>=21.1;}},
   {id:"schattenjg", r:"episch", m:"Der Schattenjäger",   w:"Die Schattenjägerin", d:function(){return "Alle Kategorien mindestens in Gold";}, f:function(st){return st.groupsAtLeast(2)>=activeGroups().length;}},
@@ -2574,24 +2614,22 @@ var TITLES = [
   {id:"ewig",       r:"mythisch",m:"Der Ewige",          w:"Die Ewige",           d:function(){return "52 Wochen in Folge trainiert";}, f:function(st){return st.maxWeekStreak>=52;}},
   {id:"titan",      r:"mythisch",m:"Titan",              w:"Titanin",             d:function(){return "Insgesamt "+kg(5000000)+" bewegt";}, f:function(st){return st.totalVol>=5000000;}},
   {id:"unermuedl",  r:"mythisch",m:"Der Unermüdliche",   w:"Die Unermüdliche",    d:function(){return "An 250 Tagen trainiert";}, f:function(st){return st.workoutDays>=250;}},
-  {id:"erwacht",    r:"mythisch",m:"Der Erwachte",       w:"Die Erwachte",        d:function(){return "Level 25 erreicht";}, f:function(st){return st.level>=25;}},
+  {id:"erwacht",    r:"mythisch",m:"Der Erwachte",       w:"Die Erwachte",        d:function(){return "Level 50 erreicht";}, f:function(st){return st.level>=50;}},
   {id:"distanzfr", avail:function(){return !!(S.plan&&S.plan.run);},  r:"mythisch",m:"Distanzfresser",     w:"Distanzfresserin",    d:function(){return "Insgesamt 1.000 km gelaufen";}, f:function(st){return st.totalKm>=1000;}},
   {id:"marathon", avail:function(){return !!(S.plan&&S.plan.run);},   r:"mythisch",m:"Der Marathonier",    w:"Die Marathonierin",   d:function(){return "Einmal 42,2 km am Stück gelaufen";}, f:function(st){return st.maxKm>=42.2;}},
   {id:"schattenwd", r:"mythisch",m:"Der Schattenwandler",w:"Die Schattenwandlerin",d:function(){return "Alle Kategorien mindestens in Platin";}, f:function(st){return st.groupsAtLeast(3)>=activeGroups().length;}},
   {id:"sh_neun",   r:"mythisch", m:"Herr der Neun",        w:"Herrin der Neun",        d:function(){return "Alle neun Schatten erweckt";}, f:function(st){return shOf(st).owned>=9;}},
   /* LEGENDÄR */
-  {id:"koloss",     r:"legendaer",m:"Kolossbrecher",     w:"Kolossbrecherin",     d:function(){return "Ein einzelner Satz mit über "+G(300,180)+" kg Gesamtlast";}, f:function(st){return st.maxSetLoad>=G(300,180);}},
-  {id:"nachtw",     r:"legendaer",m:"Nachtwandler",      w:"Nachtwandlerin",      d:function(){return "An 20 Tagen nach 21 Uhr trainiert";}, f:function(st){return st.lateDays>=20;}},
-  {id:"fruehauf",   r:"legendaer",m:"Der Frühaufsteher", w:"Die Frühaufsteherin", d:function(){return "An 20 Tagen vor 8 Uhr trainiert";}, f:function(st){return st.earlyDays>=20;}},
-  {id:"zweisonnen", r:"legendaer",m:"Wandler zweier Sonnen",w:"Wandlerin zweier Sonnen",d:function(){return "Alle Trainingstage deines Plans an einem einzigen Tag vollständig";}, f:function(st){return st.tripleDay;}},
-  {id:"unmoeglich", r:"legendaer",m:"Der Unmögliche",    w:"Die Unmögliche",      d:function(){return "An einem Tag "+kg(G(10000,6000))+" nur mit Bauchübungen bewegt";}, f:function(st){return st.absOnlyDayVol>=G(10000,6000);}},
-  {id:"windbrecher", avail:function(){return !!(S.plan&&S.plan.run);},r:"legendaer",m:"Windbrecher",       w:"Windbrecherin",       d:function(){return "5 km unter "+Math.floor(G(1200,1380)/60)+":00 gelaufen";}, f:function(st){return st.fastFive(G(1200,1380));}},
+  {id:"koloss",     r:"legendaer", avail:function(){return planHas(["deadlift","squat","legpress","legpress_h"]);}, m:"Kolossbrecher", w:"Kolossbrecherin", d:function(){return "Ein Satz mit dem "+G("2,5","2")+"-fachen (Kreuzheben), "+G("2","1,5")+"-fachen (Kniebeuge), "+G("4","3")+"-fachen (Beinpresse 45°) oder "+G("3","2,4")+"-fachen (Beinpresse horizontal) deines Körpergewichts";}, f:function(st){return kolossOK(st);}},
+  {id:"zweisonnen", r:"legendaer",m:"Wandler zweier Sonnen",w:"Wandlerin zweier Sonnen",d:function(){return "Zwei Jahre in Folge an jeweils mindestens 150 Tagen trainiert";}, f:function(st){return st.twoYears150;}},
+  {id:"unmoeglich", r:"legendaer",m:"Der Unmögliche",    w:"Die Unmögliche",      d:function(){return "12 Wochen in Folge jede Woche alle Trainingstage deines Plans vollständig";}, f:function(st){return st.perfectWeekRun>=12;}},
+  {id:"windbrecher", avail:function(){return !!(S.plan&&S.plan.run);},r:"legendaer",m:"Windbrecher",       w:"Windbrecherin",       d:function(){return "5 km unter "+paceStr(Math.round(G(1200,1380)*runAgeF())).replace(" /km","")+" gelaufen"+(runAgeF()>1?" (altersbereinigt)":"");}, f:function(st){return st.fastFive(Math.round(G(1200,1380)*runAgeF()));}},
   {id:"schattenf",   r:"legendaer",m:"Schattenfürst",     w:"Schattenfürstin",     d:function(){return "Alle Kategorien mindestens in Diamant";}, f:function(st){return st.groupsAtLeast(4)>=activeGroups().length;}},
   {id:"sh_erbe",   r:"legendaer",m:"Erbe des Schattenheers",w:"Erbin des Schattenheers",d:function(){return "Bellion zum Großmarschall erhoben";}, f:function(st){return shOf(st).bellion>=6;}},
   {id:"namenlos",   r:"legendaer",m:"Der Namenlose",     w:"Die Namenlose",       d:function(){return "Alle anderen Titel gesammelt";}, f:function(){return false;}},
   /* SONDERSTUFE */
   {id:"vollkommen",r:"sonder", hidden:true, m:"Der Vollkommene",  w:"Die Vollkommene",     d:function(){return "Alle Erfolge der App freigeschaltet";}, f:function(st){return st.allAchDone();}},
-  {id:"monarch",    r:"sonder",  m:"Schattenmonarch",    w:"Schattenmonarchin",   d:function(){return "Alle Kategorien in der Meister-Liga";}, f:function(st){return st.groupsAtLeast(5)>=activeGroups().length;}},
+  {id:"monarch",    r:"sonder",  m:"Schattenmonarch",    w:"Schattenmonarchin",   d:function(){return "Alle Kategorien mindestens in Diamant, mindestens die Hälfte davon in der Meister-Liga";}, f:function(st){ var n=activeGroups().length; return st.groupsAtLeast(4)>=n && st.groupsAtLeast(5)>=Math.ceil(n/2); }},
   {id:"sh_legion", r:"sonder",   m:"Gebieter der Legion",  w:"Gebieterin der Legion",  d:function(){return "Alle neun Schatten mindestens auf Rang General";}, f:function(st){return shOf(st).allGen;}},
   /* BERÜCHTIGT (versteckt bis freigeschaltet) */
   {id:"codebreaker",r:"geheim", hidden:true, secret:true, m:"Codebreaker", w:"Codebreakerin",
@@ -3807,7 +3845,7 @@ function renderShadowChip(){
 }
 /* Kennzahlen für Titel und Erfolge der Schattenarmee */
 function shStats(){
-  var o={owned:0, maxR:-1, bellion:-1, allGen:false, earned:0, bal:0, hoard:0, bestDay:0};
+  var o={owned:0, maxR:-1, bellion:-1, allGen:false, earned:0, bal:0, hoard:0, bestDay:0, prs:0};
   if(typeof SHADOWS==="undefined" || !SHADOWS || !S) return o;
   var s=shState(), all=true;
   SHADOWS.forEach(function(d){
@@ -3819,6 +3857,7 @@ function shStats(){
   o.allGen = all;
   var L=fragLedger();
   o.earned = L.train+L.pr+L.weeks+L.events;     /* Fragmente aus Minispielen zählen hier nicht */
+  Object.keys(L.prDay).forEach(function(d){ o.prs+=L.prDay[d]; });
   o.bal = L.total - s.spent;
   if(typeof s.hoardFrom!=="number") s.hoardFrom=L.total;   /* bestehende Armeen: ab jetzt zählen */
   o.hoard = Math.max(0, L.total - s.hoardFrom);
@@ -4595,6 +4634,12 @@ function openCodebreaker(){
 
 /* ---------- Update-Neuigkeiten ---------- */
 var NEWS=[
+ {v:"3.1.2", t:"Faire Titel & Erfolge", items:[
+   "Titel überarbeitet: Einige Titel haben neue Bedingungen, damit alle fair erreichbar sind – schwer, aber nicht unmöglich. Titel, die du schon hast, behältst du",
+   "Erfolge: Das Zusatzgewicht bei Klimmzügen und Dips richtet sich jetzt nach deinem Körpergewicht",
+   "Erfolge: Die Tempo-Ziele beim Laufen berücksichtigen ab 35 dein Alter, wie die Ligen",
+   "Neuer Erfolg für Level 50, und das höchste Streckenziel liegt jetzt bei 2.500 km"
+ ]},
  {v:"3.1.1", t:"Schattenarmee im Charakterbogen", items:[
    "Die Schattenarmee ist umgezogen: Oben rechts im Charakterbogen siehst du deine Fragmente, ein Tipp öffnet die Armee. Ein Punkt zeigt, wenn du etwas erwecken oder aufwerten kannst",
    "Das Zeichen deines aktiven Schattens sitzt jetzt am Level-Ring",
