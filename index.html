@@ -1015,6 +1015,12 @@
   .ex-best .eb-live.hit{color:var(--gold);font-weight:700;}
   .set-row.pr-hit input{border-color:var(--gold)!important;box-shadow:0 0 0 1px rgba(215,166,62,.4);}
   .set-row.pr-hit .set-idx{color:var(--gold);}
+  /* 4.0.1: Rekord (aller Zeiten) neben dem Bestwert der letzten 90 Tage */
+  .ex-best .eb-rec{display:block;font-size:10.5px;}
+  .ex-best .eb-rec b{color:#ecd9a6;font-weight:600;}
+  .ex-best .eb-live.hit.rec{color:#ffe08a;text-shadow:0 0 10px rgba(255,200,90,.45);}
+  .set-row.rec-hit input{border-color:#ffe08a!important;box-shadow:0 0 0 1px rgba(255,224,138,.55),0 0 12px -2px rgba(255,200,90,.6);}
+  .set-row.rec-hit .set-idx{color:#ffe08a;}
   .league-card.tap{cursor:pointer;}
   .league-card .lc-more{color:var(--text-dim);font-size:16px;flex:none;margin-left:-4px;}
   .rec-list{display:flex;flex-direction:column;gap:6px;margin:8px 0 10px;text-align:left;max-height:56vh;overflow:auto;-webkit-overflow-scrolling:touch;}
@@ -1678,7 +1684,7 @@
 "use strict";
 
 var KEY = "gymlog_v2_state";
-var APP_VERSION = "4.0.0";
+var APP_VERSION = "4.0.1";
 
 /* ---------- Übungskatalog ----------
    bench = geschätztes 1RM eines durchschnittlich trainierten Mannes als Vielfaches
@@ -1977,6 +1983,7 @@ function addEntry(exId){
   var xp = rows.length*10 + Math.floor(volume/250);
   var frost=frostLevel();
   var prevBest=bestBefore(exId);
+  var prev90=pr90On(today()) ? bestSince(exId, Date.now()-prMs()) : 0;
   var lvlBefore=levelFromXP(S.totalXP).level;
   S.totalXP += xp;
   var d = today();
@@ -1988,12 +1995,15 @@ function addEntry(exId){
                   setList:rows, vol:volume, xp:xp, ps:ex.perSide?1:0});
   S.lastInputs[exId] = {assist:assist, setList:rows.map(function(r){ return {w:Math.abs(r.w), reps:r.reps}; })};
   UI.open[exId] = false;
-  /* Bestwert? */
+  /* Bestwert? Ein Rekord zählt immer; ab 1. Februar 2027 auch ein neuer Bestwert der letzten 90 Tage */
   var newBest=0;
   rows.forEach(function(r){ var v=est1RM(r.eff,r.reps,repCap(ex)); if(v>newBest) newBest=v; });
-  if(prevBest>0 && newBest>prevBest+0.5){
-    pushEvent({kind:"pr", ex:exId, name:ex.name, value:Math.round(newBest*10)/10,
-               gain:Math.round((newBest-prevBest)*10)/10, date:d});
+  var isRec=prevBest>0 && newBest>prevBest+0.5, isPr=isRec || (prev90>0 && newBest>prev90+0.5);
+  if(isPr){
+    var ev={kind:"pr", ex:exId, name:ex.name, value:Math.round(newBest*10)/10,
+            gain:Math.round((newBest-(isRec?prevBest:prev90))*10)/10, date:d};
+    if(pr90On(d)) ev.rec=isRec?1:0;
+    pushEvent(ev);
   }
   var lvlAfter=levelFromXP(S.totalXP).level;
   if(lvlAfter>lvlBefore) pushEvent({kind:"level", level:lvlAfter, date:d});
@@ -3111,7 +3121,7 @@ var TITLES = [
   {id:"hundertfach",r:"episch", m:"Der Hundertfache",    w:"Die Hundertfache",    d:function(){return "An 100 Tagen trainiert";}, f:function(st){return st.workoutDays>=100;}},
   {id:"zweilasten", r:"episch", m:"Träger zweier Lasten",w:"Trägerin zweier Lasten",d:function(){return "An einem Tag "+kg(G(25000,15000))+" bewegt";}, f:function(st){return st.maxDayVol>=G(25000,15000);}},
   {id:"rastlos",    r:"episch", m:"Der Rastlose",        w:"Die Rastlose",        d:function(){return "8 Wochen in Folge mindestens 3× pro Woche trainiert";}, f:function(st){return st.streak3x>=8;}},
-  {id:"unsterbl",   r:"episch", m:"Der Unsterbliche",    w:"Die Unsterbliche",    d:function(){return "100 Bestwerte aufgestellt";}, f:function(st){return shOf(st).prs>=100;}},
+  {id:"unsterbl",   r:"episch", m:"Der Unsterbliche",    w:"Die Unsterbliche",    d:function(){return pr90On()?"100 Rekorde aufgestellt":"100 Bestwerte aufgestellt";}, f:function(st){return shOf(st).prs>=100;}},
   {id:"nachtw",     r:"episch",   m:"Nachtwandler",      w:"Nachtwandlerin",      d:function(){return "An 20 Tagen nach 21 Uhr trainiert";}, f:function(st){return st.lateDays>=20;}},
   {id:"fruehauf",   r:"episch",   m:"Der Frühaufsteher", w:"Die Frühaufsteherin", d:function(){return "An 20 Tagen vor 8 Uhr trainiert";}, f:function(st){return st.earlyDays>=20;}},
   {id:"bestaendig", avail:function(){return !!(S.plan&&S.plan.run);}, r:"episch", m:"Der Beständige",      w:"Die Beständige",      d:function(){return "Insgesamt 500 km gelaufen";}, f:function(st){return st.totalKm>=500;}},
@@ -3442,9 +3452,10 @@ function arcCompute(y, st){
   res.editDaysLeft = (anchor && !res.locked) ? dayDiff(td, res.editUntil)+1 : 0;
 
   /* Tagesdaten über die gesamte Historie – Bestwerte brauchen die Vorgeschichte */
-  var day={}, best={};
+  var day={};
+  prMarks();
   S.entries.slice().sort(function(a,b){ return a.ts-b.ts; }).forEach(function(e){
-    var d=day[e.date]=day[e.date]||{vol:0, km:0, ex:{}, groups:{}, morning:false, dark:false, pr:0};
+    var d=day[e.date]=day[e.date]||{vol:0, km:0, ex:{}, groups:{}, morning:false, dark:false, pr:0, rec:0};
     d.vol+=e.vol||0;
     var h=new Date(e.ts).getHours();
     if(h<8 || h>=17) d.dark=true;
@@ -3452,11 +3463,8 @@ function arcCompute(y, st){
     if(e.ex==="run"){ d.km+=e.km||0; d.groups["Ausdauer"]=1; if(h>=4 && h<12) d.morning=true; return; }
     d.ex[e.ex]=1;
     var ex=exById(e.ex); if(ex) d.groups[ex.group]=1;
-    var mx=0;
-    (e.setList||[]).forEach(function(s){ var v=est1RMFor(e.ex,s.eff,s.reps); if(v>mx) mx=v; });
-    var prev=best[e.ex]||0;
-    if(prev>0 && mx>prev+0.5) d.pr++;          /* gleiche Regel wie beim Loggen */
-    if(mx>prev) best[e.ex]=mx;
+    var pm=e._pm;                               /* gleiche Regel wie beim Loggen */
+    if(pm){ if(pm.pr) d.pr++; if(pm.rec) d.rec++; }
   });
   /* „Training vor 12 Uhr abschließen“: Maßgeblich ist der Moment, in dem auf
      „Abschließen“ getippt wird – erst dann steht fest, dass das Training vorbei ist.
@@ -3543,14 +3551,14 @@ function arcCompute(y, st){
   res.hibernate3=max3>=3;
 
   /* Summen über den eigenen Arc (ab dem Schwur) */
-  res.trainDays=0; res.darkDays=0; res.vol=0; res.km=0; res.prCount=0;
+  res.trainDays=0; res.darkDays=0; res.vol=0; res.km=0; res.prCount=0; res.recCount=0;
   res.betweenYears=false; res.nye=false;
   var adv=adventWeeks(y), hit=[false,false,false,false];
   if(res.A){
     var to=td<r.end?td:r.end;
     for(var d2=res.A; d2<=to; d2=addDays(d2,1)){
       var x2=day[d2]; if(!x2) continue;
-      res.trainDays++; res.vol+=x2.vol; res.km+=x2.km; res.prCount+=x2.pr;
+      res.trainDays++; res.vol+=x2.vol; res.km+=x2.km; res.prCount+=x2.pr; res.recCount+=x2.rec;
       if(x2.dark) res.darkDays++;
       if(d2>=y+"-12-25" && d2<=y+"-12-31") res.betweenYears=true;
       if(d2===y+"-12-31") res.nye=true;
@@ -3664,7 +3672,7 @@ function buildArcAchievements(y){
   once("candle","Advent, Advent","In allen vier Adventswochen trainiert", a.adventCount, 4, 2, a.adventFailed);
   once("spark","Zwischen den Jahren","Zwischen Weihnachten und Silvester trainiert (25.–31. Dezember)",
        a.betweenYears?1:0, 1, 2, td>y+"-12-31");
-  once("bolt","Rekordwinter","10 neue Bestwerte im Arc", Math.min(a.prCount,10), 10, 2);
+  once("bolt","Rekordwinter",pr90On()?"10 neue Rekorde im Arc":"10 neue Bestwerte im Arc", Math.min(a.recCount,10), 10, 2);
   counter("avalanche","Lawine","Je 100 Tonnen Volumen im Arc (zählt ×N)", Math.floor(a.vol/100000), 1);
   if(runOn) once("shoe","Kältelauf","50 km im Arc gelaufen", Math.min(Math.floor(a.km*10)/10,50), 50, 2, a.phase==="ended");
   once("seal","Wort gehalten","Alle Ziele deines Schwurs erreicht", a.oathCount, a.oathTotal, 3, a.oathFailed);
@@ -4253,19 +4261,14 @@ function shState(){
 }
 /* Verdiente Fragmente, aus den Daten nachgerechnet */
 function fragLedger(){
-  var L={train:0, pr:0, weeks:0, events:0, prDay:{}};
+  var L={train:0, pr:0, weeks:0, events:0, prDay:{}, recDay:{}};
   var hasStr={};
   S.entries.forEach(function(e){ if(e.ex!=="run") hasStr[e.date]=1; });
   var seen={};
   (S.finishedDates||[]).forEach(function(d){ if(hasStr[d] && !seen[d]){ seen[d]=1; L.train+=2; } });
-  var best={};
-  S.entries.filter(function(e){ return e.ex!=="run"; }).sort(function(a,b){ return (a.ts||0)-(b.ts||0); }).forEach(function(e){
-    var mx=0;
-    (e.setList||[]).forEach(function(s){ var v=est1RMFor(e.ex,s.eff,s.reps); if(v>mx) mx=v; });
-    var p=best[e.ex]||0;
-    if(p>0 && mx>p+0.5){ L.pr+=3; L.prDay[e.date]=(L.prDay[e.date]||0)+1; }   /* gleiche Regel wie beim Loggen */
-    if(mx>p) best[e.ex]=mx;
-  });
+  var PM=prMarks();                                /* gleiche Regel wie beim Loggen */
+  Object.keys(PM.prDay).forEach(function(d){ L.pr+=3*PM.prDay[d]; L.prDay[d]=PM.prDay[d]; });
+  Object.keys(PM.recDay).forEach(function(d){ L.recDay[d]=PM.recDay[d]; });
   Object.keys(S.arcs||{}).forEach(function(ys){
     var st=S.arcs[ys]; if(!st) return;
     Object.keys(st.xp||{}).forEach(function(k){ if(/^w\d+$/.test(k)) L.weeks+=5; });
@@ -4386,7 +4389,7 @@ function shStats(){
   o.allGen = all;
   var L=fragLedger();
   o.earned = L.train+L.pr+L.weeks+L.events;     /* Fragmente aus Minispielen zählen hier nicht */
-  Object.keys(L.prDay).forEach(function(d){ o.prs+=L.prDay[d]; });
+  Object.keys(L.recDay).forEach(function(d){ o.prs+=L.recDay[d]; });   /* Titel zählen Rekorde */
   o.bal = L.total - s.spent;
   if(typeof s.hoardFrom!=="number") s.hoardFrom=L.total;   /* bestehende Armeen: ab jetzt zählen */
   o.hoard = Math.max(0, L.total - s.hoardFrom);
@@ -4732,7 +4735,7 @@ function feedCard(ev, unlocks){
       un='<div class="wd-head">FREIGESCHALTET</div>';
       unlocks.slice().sort(function(a,b){ return a.t-b.t; }).forEach(function(u){
         var col=u.color||"var(--gold)", ico=u.ico||"star", nm="", sub="";
-        if(u.kind==="pr"){ ico="bolt"; col="var(--gold)"; nm="Bestwert "+u.name; sub=String(u.value).replace(".",",")+" kg (+"+String(u.gain).replace(".",",")+")"; }
+        if(u.kind==="pr"){ ico=u.rec?"trophy":"bolt"; col="var(--gold)"; nm=(u.rec?"Rekord ":"Bestwert ")+u.name; sub=String(u.value).replace(".",",")+" kg (+"+String(u.gain).replace(".",",")+")"; }
         else if(u.kind==="ach"){ nm=u.name; sub=u.desc; }
         else if(u.kind==="title"){ nm=u.name; sub=u.evl?"Event-Titel \u00b7 "+u.evl:(u.season?"Saison-Titel \u00b7 Winter Arc "+u.season:(u.rar?u.rar+"er Titel":"Titel")); }
         else if(u.kind==="hunt"){ ico="wolf"; col=JAGD_ACCENT; nm=(u.alpha?"Alpha":"Beute")+": "+u.name; sub="+"+u.xp+" XP \u00b7 Jagdsaison"; }
@@ -4753,7 +4756,7 @@ function feedCard(ev, unlocks){
       '<b>'+String(ev.km).replace(".",",")+'</b><span>km</span>', true);
   }
   if(ev.kind==="pr"){
-    return shell("p","var(--gold)",svgIco("bolt"),"Neuer Bestwert",
+    return shell("p","var(--gold)",svgIco(ev.rec?"trophy":"bolt"),ev.rec?"Neuer Rekord":"Neuer Bestwert",
       ev.name, '<b>'+String(ev.value).replace(".",",")+'</b><span>kg &nbsp;+'+String(ev.gain).replace(".",",")+'</span>', false);
   }
   if(ev.kind==="evdone"){
@@ -5177,6 +5180,10 @@ function openCodebreaker(){
 
 /* ---------- Update-Neuigkeiten ---------- */
 var NEWS=[
+ {v:"4.0.1", t:"Bestwert und Rekord", items:[
+   "Ab 1. Februar zählt der Bestwert einer Übung nur noch die letzten 90 Tage, genau wie die Liga. Nach einer Pause stellst du so schnell wieder Bestwerte auf",
+   "Dein bester Wert aller Zeiten bleibt als Rekord stehen: auf der Übungskarte, in der Rekordtafel und für Erfolge und Titel"
+ ]},
  {v:"4.0.0", t:"Neue Kurven", items:[
    "Neue Kurven im Verlauf: Kraft je Muskelgruppe mit Liga-Bändern, Fortschritt je Übung und auf Wunsch die Trainingsbelastung (Einstellungen → Training)",
    "Wiederholte Erfolge (×2, ×3 …) melden sich als kurzes Banner; in den Einstellungen auch als Fenster oder aus"
@@ -6568,9 +6575,66 @@ function renderRunCard(wrap){
   upd();
 }
 
+/* ---------- 4.0.1: Bestwert und Rekord ----------
+   Ab dem 1. Februar 2027 gilt: Bestwert = höchstes geschätztes 1RM der letzten 90 Tage
+   (dieselbe Zeitspanne wie die Liga), Rekord = höchstes geschätztes 1RM aller Zeiten.
+   Neu ist ein Wert ab +0,5 kg. Ein neuer Bestwert braucht einen Vergleichswert aus den
+   90 Tagen davor: Nach einer Pause setzt die erste Einheit nur den Startwert. Ein neuer
+   Rekord zählt immer, auch als Bestwert. Vor dem 1. Februar zählte nur der Rekord, und er
+   hieß Bestwert – alte Tage werden deshalb nach der alten Regel gewertet. */
+var prMarkCache=null;
+function prMs(){ return 7776000000; }              /* 90 Tage in Millisekunden */
+function pr90From(){ return "2027-02-01"; }
+function pr90On(iso){ return (iso||today())>=pr90From(); }
+/* Höchstes geschätztes 1RM einer Übung ab einem Zeitpunkt (0 = keins) */
+function bestSince(exId, cutTs){
+  var b=0;
+  S.entries.forEach(function(e){
+    if(e.ex!==exId || (e.ts||0)<cutTs) return;
+    (e.setList||[]).forEach(function(x){ var v=est1RMFor(exId,x.eff,x.reps); if(v>b) b=v; });
+  });
+  return b;
+}
+/* Markiert jeden Kraft-Eintrag mit neuem Bestwert (pr) und neuem Rekord (rec), in zeitlicher Reihenfolge.
+   Die Markierung hängt unsichtbar am Eintrag (wird nicht gespeichert); dazu die Summen je Tag. */
+function prMarks(){
+  if(prMarkCache && prMarkCache.arr===S.entries && prMarkCache.n===S.entries.length) return prMarkCache;
+  var res={arr:S.entries, n:S.entries.length, prDay:{}, recDay:{}}, hist={};
+  S.entries.filter(function(e){ return e.ex!=="run"; }).sort(function(a,b){ return (a.ts||0)-(b.ts||0); }).forEach(function(e){
+    var mx=0;
+    (e.setList||[]).forEach(function(x){ var v=est1RMFor(e.ex,x.eff,x.reps); if(v>mx) mx=v; });
+    var h=hist[e.ex]=hist[e.ex]||{all:0, list:[]};
+    var rec=h.all>0 && mx>h.all+0.5, pr=rec;
+    if(!pr && pr90On(e.date)){
+      var cut=(e.ts||0)-prMs(), fb=0;
+      for(var i=h.list.length-1;i>=0;i--){ if(h.list[i][0]<cut) break; if(h.list[i][1]>fb) fb=h.list[i][1]; }
+      pr=fb>0 && mx>fb+0.5;
+    }
+    try{ Object.defineProperty(e, "_pm", {value:{pr:pr, rec:rec}, writable:true, configurable:true, enumerable:false}); }catch(err){}
+    if(pr) res.prDay[e.date]=(res.prDay[e.date]||0)+1;
+    if(rec) res.recDay[e.date]=(res.recDay[e.date]||0)+1;
+    if(mx>h.all) h.all=mx;
+    h.list.push([e.ts||0, mx]);
+  });
+  prMarkCache=res;
+  return res;
+}
+/* Bestwert der letzten 90 Tage mit dem Satz, der ihn hält (null = in 90 Tagen nichts geloggt) */
+function bestInfo90(exId){
+  var cut=Date.now()-prMs(), b=null;
+  S.entries.forEach(function(e){
+    if(e.ex!==exId || (e.ts||0)<cut) return;
+    (e.setList||[]).forEach(function(s){
+      var v=est1RMFor(exId,s.eff,s.reps);
+      if(!b || v>b.v) b={v:v, w:s.w, reps:s.reps, date:e.date};
+    });
+  });
+  return b;
+}
+
 /* ---------- Bestwerte ----------
-   Bestwert = höchstes geschätztes 1RM aller Sätze einer Übung – genau der
-   Wert, den „Neuer Bestwert“ in Feed und Quest prüft (neu ab +0,5 kg). */
+   bestInfo = höchstes geschätztes 1RM aller Sätze einer Übung, also der Rekord
+   (bis Ende Januar 2027 hieß er Bestwert). */
 function bestInfo(exId){
   var b=null;
   S.entries.forEach(function(e){
@@ -6610,6 +6674,15 @@ function beatHint(ex, b){
 function bestLineHTML(ex){
   var b=bestInfo(ex.id);
   if(!b) return '<div class="ex-best">Noch kein Bestwert – dein erster Eintrag setzt ihn.<span class="eb-live"></span></div>';
+  if(pr90On()){
+    var r=b, f=bestInfo90(ex.id);
+    var recTxt='<span class="eb-rec">Rekord <b>'+kgStr(r.v)+' kg</b> · '+setStr(ex,r.w,r.reps)+', '+dShort(r.date)+'</span>';
+    if(!f) return '<div class="ex-best">In den letzten 90 Tagen noch kein Eintrag – deine nächste Einheit setzt den Startwert.'+recTxt+'<span class="eb-live"></span></div>';
+    var hf=beatHint(ex,f);
+    return '<div class="ex-best">Bestwert (90 Tage) <b>'+kgStr(f.v)+' kg</b> · '+setStr(ex,f.w,f.reps)+', '+dShort(f.date)+
+      (r.v>f.v+0.05 ? recTxt : '<span class="eb-rec">zugleich dein Rekord</span>')+
+      '<span class="eb-live">'+(hf?'z. B. '+setStr(ex,hf.w,hf.reps)+' schlägt ihn':'')+'</span></div>';
+  }
   var h=beatHint(ex,b);
   return '<div class="ex-best">Bestwert (gesch. 1RM) <b>'+kgStr(b.v)+' kg</b> · '+setStr(ex,b.w,b.reps)+', '+dShort(b.date)+
     '<span class="eb-live">'+(h?'z. B. '+setStr(ex,h.w,h.reps)+' schlägt ihn':'')+'</span></div>';
@@ -6617,25 +6690,31 @@ function bestLineHTML(ex){
 /* Markiert schon beim Eintippen jeden Satz, der den Bestwert schlagen würde */
 function markPR(card, ex){
   var live=card.querySelector(".eb-live"); if(!live) return;
-  var b=bestInfo(ex.id), assist=ex.bw===1 && UI.assist[ex.id], cap=repCap(ex), hits=[];
+  var r=bestInfo(ex.id), on90=pr90On(), b=on90 ? bestInfo90(ex.id) : r;
+  var assist=ex.bw===1 && UI.assist[ex.id], cap=repCap(ex), hits=[], recHits=[];
   card.querySelectorAll(".set-row").forEach(function(row){
     var i=parseInt(row.getAttribute("data-i"),10), s=(UI.sets[ex.id]||[])[i]; if(!s) return;
-    var w=parseFloat(String(s.w).replace(",",".")), reps=parseInt(s.reps,10), hit=false;
-    if(b && !isNaN(reps) && reps>0){
+    var w=parseFloat(String(s.w).replace(",",".")), reps=parseInt(s.reps,10), hit=false, rec=false;
+    if(r && !isNaN(reps) && reps>0){
       if(isNaN(w)) w=0;
       w=Math.abs(w)*(assist?-1:1);
-      hit = est1RM(effOf(ex,w), reps, cap) > b.v+0.5;
+      var v=est1RM(effOf(ex,w), reps, cap);
+      rec = on90 && v > r.v+0.5;
+      hit = rec || (!!b && v > b.v+0.5);
     }
     if(hit){ row.classList.add("pr-hit"); hits.push(i+1); } else row.classList.remove("pr-hit");
+    if(rec){ row.classList.add("rec-hit"); recHits.push(i+1); } else row.classList.remove("rec-hit");
   });
-  if(!b) return;
+  if(!r) return;
   if(hits.length){
-    live.textContent=(hits.length===1 ? "Satz "+hits[0]+" wäre" : "Sätze "+hits.join(", ")+" wären")+" ein neuer Bestwert!";
+    var list=recHits.length ? recHits : hits;
+    live.textContent=(list.length===1 ? "Satz "+list[0]+" wäre" : "Sätze "+list.join(", ")+" wären")+(recHits.length?" ein neuer Rekord!":" ein neuer Bestwert!");
     live.classList.add("hit");
+    if(recHits.length) live.classList.add("rec"); else live.classList.remove("rec");
   } else {
-    var h=beatHint(ex,b);
+    var h=b ? beatHint(ex,b) : null;
     live.textContent=h ? "z. B. "+setStr(ex,h.w,h.reps)+" schlägt ihn" : "";
-    live.classList.remove("hit");
+    live.classList.remove("hit"); live.classList.remove("rec");
   }
 }
 /* Rekordtafel einer Muskelgruppe (Tipp auf die Karte im Ligen-Tab) */
@@ -6660,14 +6739,17 @@ function openRecords(g){
     CATALOG.forEach(function(c){
       if(c.g!==g) return;
       var b=bestInfo(c.id); if(!b) return;
-      items.push({ex:exById(c.id), b:b});
+      items.push({ex:exById(c.id), b:b, f:pr90On()?bestInfo90(c.id):null});
     });
     items.sort(function(x,y){ return y.b.v-x.b.v; });
     html = items.length ? '<div class="rec-list">'+items.map(function(it){
-        return '<div class="rec-row"><span class="rec-name">'+it.ex.name+'<small>'+setStr(it.ex,it.b.w,it.b.reps)+' · '+dShort(it.b.date)+'</small></span>'+
+        return '<div class="rec-row"><span class="rec-name">'+it.ex.name+'<small>'+setStr(it.ex,it.b.w,it.b.reps)+' · '+dShort(it.b.date)+'</small>'+
+          (pr90On() ? '<small>'+(it.f ? (it.f.v>=it.b.v-0.05 ? 'Bestwert (90 Tage): derselbe' : 'Bestwert (90 Tage): '+kgStr(it.f.v)+' kg') : 'In den letzten 90 Tagen nicht geloggt')+'</small>' : '')+'</span>'+
           '<span class="rec-val">'+kgStr(it.b.v)+' kg</span></div>';
       }).join("")+'</div>' : '<p class="empty">Noch keine Einträge in dieser Gruppe.</p>';
-    html+='<p class="note" style="text-align:left;">Bestwert = höchstes geschätztes 1RM aller Sätze (gezählt bis 12 Wiederholungen, mit Körpergewicht bis 20). Ein neuer Bestwert zählt ab +0,5 kg. Für die Liga zählen nur die letzten 90 Tage.</p>';
+    html+= pr90On()
+      ? '<p class="note" style="text-align:left;">Rekord = höchstes geschätztes 1RM aller Sätze (gezählt bis 12 Wiederholungen, mit Körpergewicht bis 20). Bestwert = dasselbe für die letzten 90 Tage, wie bei der Liga. Neu zählt beides ab +0,5 kg.</p>'
+      : '<p class="note" style="text-align:left;">Bestwert = höchstes geschätztes 1RM aller Sätze (gezählt bis 12 Wiederholungen, mit Körpergewicht bis 20). Ein neuer Bestwert zählt ab +0,5 kg. Für die Liga zählen nur die letzten 90 Tage.</p>';
   }
   box.innerHTML='<button class="popup-x" id="popupX">×</button><h3>REKORDE · '+g.toUpperCase()+'</h3>'+html+
     '<button id="closeOverlay" style="background:rgba(4,8,18,.7);color:var(--text);border-color:var(--border);margin-top:8px;">Schließen</button>';
@@ -7588,7 +7670,9 @@ function openExCurve(id){
   box.innerHTML='<button class="popup-x" id="popupX">×</button><h3>'+ex.name+'</h3>'+
     '<div class="chart-title" style="margin:0 0 4px">GESCH. 1RM PRO EINHEIT (KG)</div>'+lineChart(pts,"#d7a63e")+
     '<div class="row"><span>Erste Einheit</span><b>'+(ds.length?kgStr(all[0])+' kg · '+shortDate(ds[0]):'–')+'</b></div>'+
-    '<div class="row"><span>Bestwert</span><b>'+(ds.length?kgStr(Math.max.apply(null,all))+' kg':'–')+'</b></div>'+
+    (pr90On() ? '<div class="row"><span>Rekord</span><b>'+(ds.length?kgStr(Math.max.apply(null,all))+' kg':'–')+'</b></div>'+
+      '<div class="row"><span>Bestwert (90 Tage)</span><b>'+(function(){ var f=bestInfo90(id); return f?kgStr(f.v)+' kg':'–'; })()+'</b></div>'
+    : '<div class="row"><span>Bestwert</span><b>'+(ds.length?kgStr(Math.max.apply(null,all))+' kg':'–')+'</b></div>')+
     '<div class="row"><span>Einheiten</span><b>'+ds.length+'</b></div>'+
     '<button id="closeOverlay">Schließen</button>';
   openOverlay();
@@ -7642,7 +7726,8 @@ var NEWS_DATED=[
    "Rückblick auf deinen Winter Arc, für alle mit Schwur: Karten zum Durchtippen und Teilen, jederzeit wieder in den Winter-Arc-Details",
    "Legias Challenge vom 1. bis 28. Februar: Sammle in vier Wochen viermal dein Wochenziel an Trainings. Annehmen bis 7. Februar; es winken der Titel Monarch des Anfangs, Legias Schatten und 20 Fragmente",
    "Monarchen-Schatten: Besiegte Monarchen schließen sich deiner Armee an und verändern den Charakterbogen. Den Anfang macht Sillad, für alle, die ihren Winter-Arc-Schwur gehalten haben",
-   "Ligen bei Körpergewichtsübungen neu eingestuft"
+   "Ligen bei Körpergewichtsübungen neu eingestuft",
+   "Bestwerte gelten ab heute für die letzten 90 Tage; dein Allzeit-Wert steht als Rekord daneben"
  ]}
 ];
 function pendingDatedNews(){
